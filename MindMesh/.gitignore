@@ -1,0 +1,33 @@
+# MindMesh — Root .gitignore
+# Frontend and backend also have their own scoped .gitignore files.
+
+# Environment
+.env
+.env.local
+.env.*.local
+!*.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Logs
+*.log
+
+# Dependency directories
+node_modules/
+__pycache__/
+*.pyc
+
+# Build output
+dist/
+build/
+staticfiles/
+
+# Docker
+*.pid

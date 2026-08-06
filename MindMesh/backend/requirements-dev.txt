@@ -1,0 +1,10 @@
+-r requirements.txt
+
+# Linting & formatting
+black==24.8.0
+flake8==7.1.1
+isort==5.13.2
+
+# Testing (harness scaffolded per ROADMAP.md Milestone 1 — CI-ready structure)
+pytest==8.3.3
+pytest-django==4.9.0

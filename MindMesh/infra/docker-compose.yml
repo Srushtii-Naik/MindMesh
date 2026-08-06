@@ -1,0 +1,106 @@
+# MindMesh — Local Development Stack
+# Per ROADMAP.md Milestone 1: brings up frontend, backend, PostgreSQL, and
+# Redis together, with the frontend and backend communicating over a basic
+# health-check endpoint.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mindmesh
+      POSTGRES_PASSWORD: mindmesh
+      POSTGRES_DB: mindmesh
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U mindmesh']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../infra/docker/Dockerfile.backend
+    restart: unless-stopped
+    env_file:
+      - path: ../backend/.env
+        required: false
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.development
+      DATABASE_URL: postgres://mindmesh:mindmesh@db:5432/mindmesh
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ../backend:/app
+    ports:
+      - '8000:8000'
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery_worker:
+    build:
+      context: ../backend
+      dockerfile: ../infra/docker/Dockerfile.backend
+    restart: unless-stopped
+    command: celery -A celery_app worker --loglevel=info
+    env_file:
+      - path: ../backend/.env
+        required: false
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.development
+      DATABASE_URL: postgres://mindmesh:mindmesh@db:5432/mindmesh
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ../backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../infra/docker/Dockerfile.frontend
+    restart: unless-stopped
+    environment:
+      # Copy frontend/.env.example to frontend/.env.local to override these.
+      VITE_API_BASE_URL: http://localhost:8000/api/v1
+      VITE_APP_ENV: development
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    ports:
+      - '5173:5173'
+    depends_on:
+      - backend
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - '8080:80'
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
