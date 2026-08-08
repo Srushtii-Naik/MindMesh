@@ -12,7 +12,7 @@ from django.urls import include, path
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/', include('common.urls')),
-    # Domain routes are added starting in Milestone 2, e.g.:
-    # path('api/v1/auth/', include('apps.accounts.urls')),
+    path('api/v1/auth/', include('apps.accounts.urls')),
+    # Further domain routes are added starting in later milestones, e.g.:
     # path('api/v1/tasks/', include('apps.tasks.urls')),
 ]

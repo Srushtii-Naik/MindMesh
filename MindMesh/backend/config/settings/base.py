@@ -11,6 +11,7 @@ their respective milestones per ROADMAP.md.
 """
 
 from pathlib import Path
+from datetime import timedelta
 
 import environ
 
@@ -42,6 +43,7 @@ DJANGO_APPS = [
 
 THIRD_PARTY_APPS = [
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
 ]
 
@@ -125,6 +127,15 @@ CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
+# Enables tests (and only tests) to run tasks synchronously, in-process,
+# without a running broker. Never enabled outside of the test environment.
+CELERY_TASK_ALWAYS_EAGER = env.bool('CELERY_TASK_ALWAYS_EAGER', default=False)
+
+# --------------------------------------------------------------------------
+# Custom user model (ARCHITECTURE.md Section 5 — email-based authentication)
+# --------------------------------------------------------------------------
+
+AUTH_USER_MODEL = 'accounts.User'
 
 # --------------------------------------------------------------------------
 # Password validation
@@ -165,11 +176,31 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
-    # Authentication classes are added in Milestone 2 (JWT).
-    'DEFAULT_AUTHENTICATION_CLASSES': [],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
+    # Secure-by-default per PROJECT_RULES.md Section 8: endpoints are private
+    # unless explicitly marked AllowAny (e.g. register/login/health-check).
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
+
+# --------------------------------------------------------------------------
+# JWT configuration (ARCHITECTURE.md Section 5 — Authentication Flow)
+# --------------------------------------------------------------------------
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
 }
 
 # --------------------------------------------------------------------------
@@ -179,3 +210,28 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = env.list(
     'CORS_ALLOWED_ORIGINS', default=['http://localhost:5173']
 )
+
+# --------------------------------------------------------------------------
+# Google OAuth (ARCHITECTURE.md Section 5 — Google OAuth flow)
+# --------------------------------------------------------------------------
+
+GOOGLE_OAUTH_CLIENT_ID = env('GOOGLE_OAUTH_CLIENT_ID', default='')
+
+# --------------------------------------------------------------------------
+# Frontend URL — used to build links that leave the backend (e.g. the
+# password reset link embedded in the reset email).
+# --------------------------------------------------------------------------
+
+FRONTEND_URL = env('FRONTEND_URL', default='http://localhost:5173')
+
+# --------------------------------------------------------------------------
+# Email (password reset notifications)
+# --------------------------------------------------------------------------
+#
+# Defaults to Django's console backend so reset emails are visible in
+# server logs during development without requiring real SMTP credentials.
+# A real backend (SMTP/SES/etc.) is configured via EMAIL_BACKEND in
+# staging/production environments.
+
+EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='MindMesh <no-reply@mindmesh.app>')

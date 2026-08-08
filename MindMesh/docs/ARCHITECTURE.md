@@ -116,6 +116,8 @@ MindMesh supports **email/password login** and **Google OAuth**, both issuing th
 - Token revocation/blacklisting is supported via a Redis-backed denylist for logout and security events.
 - All authenticated endpoints enforce permission checks at the service layer, not just the view layer, to prevent accidental data leakage across users.
 
+> **Current implementation note:** As of Milestone 2.1 (Core Authentication), access and refresh tokens are both stored in `localStorage` rather than an httpOnly cookie, as a deliberate, scoped decision for this stage of development. See [`docs/adr/0001-token-storage-strategy.md`](./adr/0001-token-storage-strategy.md) for the full rationale, the security trade-off being accepted, and what must change before production. This is a registered finding against the Milestone 12 security audit, not an oversight.
+
 ---
 
 ## 6. API Communication

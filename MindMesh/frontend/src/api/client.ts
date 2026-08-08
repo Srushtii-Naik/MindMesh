@@ -1,9 +1,7 @@
-import axios, {
-  type AxiosError,
-  type AxiosInstance,
-  type InternalAxiosRequestConfig,
-} from 'axios';
+import axios, { type AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from 'axios';
 import { API_BASE_URL, API_TIMEOUT_MS } from '@/constants';
+import { useAuthStore } from '@/features/auth/store';
+import type { RefreshResponse } from '@/features/auth/types';
 
 /**
  * Centralized Axios instance.
@@ -11,11 +9,7 @@ import { API_BASE_URL, API_TIMEOUT_MS } from '@/constants';
  * Per ARCHITECTURE.md Section 2 & 6: all network communication is centralized
  * through this client — no direct fetch/axios calls inside components or
  * feature hooks. Domain-specific request functions live in `api/<domain>.ts`
- * and are consumed via TanStack Query hooks.
- *
- * NOTE (Milestone 1 — Foundation only):
- * Token attachment and refresh logic are scaffolded but intentionally inert.
- * Real authentication is implemented in Milestone 2 per ROADMAP.md.
+ * or `features/<domain>/api.ts` and are consumed via TanStack Query hooks.
  */
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -25,26 +19,88 @@ export const apiClient: AxiosInstance = axios.create({
   },
 });
 
-/** Placeholder token getter — replaced by real auth/session storage in Milestone 2. */
-function getAccessToken(): string | null {
-  return null;
-}
+/**
+ * A separate, interceptor-free instance for the refresh call itself —
+ * using `apiClient` here would recurse back into the 401 handler below.
+ */
+const refreshClient: AxiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: API_TIMEOUT_MS,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = getAccessToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  const { accessToken } = useAuthStore.getState();
+  if (accessToken) {
+    config.headers.Authorization = `Bearer ${accessToken}`;
   }
   return config;
 });
 
+/**
+ * In-flight refresh promise, shared across concurrent 401s so a burst of
+ * requests triggers exactly one refresh call rather than one per request.
+ */
+let refreshPromise: Promise<string> | null = null;
+
+async function refreshAccessToken(): Promise<string> {
+  const { refreshToken, setTokens, clearAuth } = useAuthStore.getState();
+
+  if (!refreshToken) {
+    clearAuth();
+    throw new Error('No refresh token available.');
+  }
+
+  try {
+    const { data } = await refreshClient.post<RefreshResponse>('/auth/token/refresh/', {
+      refresh: refreshToken,
+    });
+    // The backend rotates refresh tokens (SIMPLE_JWT.ROTATE_REFRESH_TOKENS),
+    // so a new refresh token is issued alongside the new access token.
+    setTokens({ access: data.access, refresh: data.refresh ?? refreshToken });
+    return data.access;
+  } catch (error) {
+    clearAuth();
+    throw error;
+  }
+}
+
+interface RetryableRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
+
 apiClient.interceptors.response.use(
   (response) => response,
-  (error: AxiosError) => {
-    // Error-shape normalization for TanStack Query is expanded in Milestone 2
-    // once the backend's standardized error envelope (ARCHITECTURE.md Section 6)
-    // is implemented. For now, errors are passed through unmodified.
-    return Promise.reject(error);
+  async (error: AxiosError) => {
+    const originalRequest = error.config as RetryableRequestConfig | undefined;
+    const { refreshToken } = useAuthStore.getState();
+
+    const shouldAttemptRefresh =
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      Boolean(refreshToken);
+
+    if (!shouldAttemptRefresh || !originalRequest) {
+      return Promise.reject(error);
+    }
+
+    originalRequest._retry = true;
+
+    try {
+      refreshPromise ??= refreshAccessToken().finally(() => {
+        refreshPromise = null;
+      });
+      const newAccessToken = await refreshPromise;
+
+      originalRequest.headers = originalRequest.headers ?? {};
+      originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+      return apiClient(originalRequest);
+    } catch (refreshError) {
+      return Promise.reject(refreshError);
+    }
   }
 );
 
