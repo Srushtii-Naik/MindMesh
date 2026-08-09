@@ -184,6 +184,21 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    # Rate limiting (PROJECT_RULES.md Section 8 — "Rate limiting on auth and
+    # AI-chat endpoints at minimum"). ScopedRateThrottle only throttles views
+    # that declare a `throttle_scope`, so this has no effect on endpoints
+    # that don't opt in (see apps/accounts/views.py for which ones do).
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.ScopedRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'auth_register': '5/min',
+        'auth_login': '10/min',
+        'auth_google': '10/min',
+        'auth_token_refresh': '30/min',
+        'auth_password_reset': '5/min',
+        'auth_password_reset_confirm': '5/min',
+    },
 }
 
 # --------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 
 **The AI companion that remembers your life, so you don't have to manage it across a dozen apps.**
 
-> Status: Planning Phase — Pre-Development
+> Status: In Development — Milestone 2 (Authentication & User Management) Complete
 
 ---
 
@@ -191,20 +191,20 @@ mindmesh/
 
 Milestones are sequenced in strict dependency order, from `PROJECT_RULES.md`-aligned foundations through to Version 1.0.
 
-| # | Milestone | Depends On |
-|---|---|---|
-| 1 | Project Foundation | — |
-| 2 | Authentication & User Management | Milestone 1 |
-| 3 | Dashboard | Milestone 2 |
-| 4 | Task Management | Milestone 3 |
-| 5 | Calendar & Scheduling | Milestone 4 |
-| 6 | Notes & Knowledge | Milestone 2 |
-| 7 | AI Companion | Milestones 4, 5, 6 |
-| 8 | Memory Engine | Milestone 7 |
-| 9 | Notifications | Milestone 5, Milestone 1 infra |
-| 10 | Family & Shared Workspace | Milestones 4, 5, 6 |
-| 11 | Analytics & Insights | Milestones 4–8 |
-| 12 | Production & Deployment | Milestones 1–11 |
+| # | Milestone | Depends On | Status |
+|---|---|---|---|
+| 1 | Project Foundation | — | ✅ Complete |
+| 2 | Authentication & User Management | Milestone 1 | ✅ Complete |
+| 3 | Dashboard | Milestone 2 | Not started |
+| 4 | Task Management | Milestone 3 | Not started |
+| 5 | Calendar & Scheduling | Milestone 4 | Not started |
+| 6 | Notes & Knowledge | Milestone 2 | Not started |
+| 7 | AI Companion | Milestones 4, 5, 6 | Not started |
+| 8 | Memory Engine | Milestone 7 | Not started |
+| 9 | Notifications | Milestone 5, Milestone 1 infra | Not started |
+| 10 | Family & Shared Workspace | Milestones 4, 5, 6 | Not started |
+| 11 | Analytics & Insights | Milestones 4–8 | Not started |
+| 12 | Production & Deployment | Milestones 1–11 | Not started |
 
 Full details, deliverables, and completion checklists for each milestone are documented in [`ROADMAP.md`](./ROADMAP.md).
 
@@ -212,12 +212,23 @@ Full details, deliverables, and completion checklists for each milestone are doc
 
 ## Installation
 
-Setup instructions will be added once Milestone 1 (Project Foundation) is complete and the local Docker Compose environment is available.
+Milestone 1 (Project Foundation) is complete, so the local Docker Compose environment is available.
 
+```bash
+# 1. Copy environment templates and fill in local values
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env.local
+
+# 2. Bring up frontend, backend, PostgreSQL, and Redis together
+cd infra
+docker compose up --build
+
+# Frontend:  http://localhost:5173
+# Backend:   http://localhost:8000/api/v1/
+# Via Nginx: http://localhost:8080/
 ```
-# Placeholder — installation steps to be documented
-# once the project skeleton (Milestone 1) is finalized.
-```
+
+Google OAuth sign-in requires `GOOGLE_OAUTH_CLIENT_ID` (backend) and `VITE_GOOGLE_OAUTH_CLIENT_ID` (frontend) to be set to the same OAuth client ID; without it, the Google sign-in button stays hidden and email/password auth works as normal.
 
 ## Documentation
 

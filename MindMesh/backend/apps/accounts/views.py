@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from apps.accounts.serializers import (
     EmailTokenObtainPairSerializer,
@@ -57,6 +57,7 @@ class RegisterView(APIView):
     """
 
     permission_classes = [AllowAny]
+    throttle_scope = 'auth_register'
 
     def post(self, request: Request) -> Response:
         serializer = RegisterSerializer(data=request.data)
@@ -93,6 +94,20 @@ class LoginView(TokenObtainPairView):
 
     permission_classes = [AllowAny]
     serializer_class = EmailTokenObtainPairSerializer
+    throttle_scope = 'auth_login'
+
+
+class TokenRefreshThrottledView(TokenRefreshView):
+    """
+    POST /api/v1/auth/token/refresh/
+
+    Thin subclass of simple-jwt's TokenRefreshView that adds rate limiting
+    (PROJECT_RULES.md Section 8) without altering any refresh behavior —
+    simple-jwt's own view already handles rotation/blacklisting per
+    ARCHITECTURE.md Section 5.
+    """
+
+    throttle_scope = 'auth_token_refresh'
 
 
 class LogoutView(APIView):
@@ -137,6 +152,7 @@ class GoogleLoginView(APIView):
     """
 
     permission_classes = [AllowAny]
+    throttle_scope = 'auth_google'
 
     def post(self, request: Request) -> Response:
         serializer = GoogleAuthSerializer(data=request.data)
@@ -168,6 +184,7 @@ class PasswordResetRequestView(APIView):
     """
 
     permission_classes = [AllowAny]
+    throttle_scope = 'auth_password_reset'
 
     def post(self, request: Request) -> Response:
         serializer = PasswordResetRequestSerializer(data=request.data)
@@ -190,6 +207,7 @@ class PasswordResetConfirmView(APIView):
     """
 
     permission_classes = [AllowAny]
+    throttle_scope = 'auth_password_reset_confirm'
 
     def post(self, request: Request) -> Response:
         serializer = PasswordResetConfirmSerializer(data=request.data)

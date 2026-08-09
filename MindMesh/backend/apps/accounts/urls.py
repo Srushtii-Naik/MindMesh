@@ -6,7 +6,6 @@ API versioning convention.
 """
 
 from django.urls import path
-from rest_framework_simplejwt.views import TokenRefreshView
 
 from apps.accounts.views import (
     GoogleLoginView,
@@ -20,13 +19,14 @@ from apps.accounts.views import (
     SessionRevokeAllView,
     SessionRevokeView,
     SettingsView,
+    TokenRefreshThrottledView,
 )
 
 urlpatterns = [
     # Core authentication (Milestone 2.1)
     path('register/', RegisterView.as_view(), name='auth-register'),
     path('login/', LoginView.as_view(), name='auth-login'),
-    path('token/refresh/', TokenRefreshView.as_view(), name='auth-token-refresh'),
+    path('token/refresh/', TokenRefreshThrottledView.as_view(), name='auth-token-refresh'),
     path('logout/', LogoutView.as_view(), name='auth-logout'),
 
     # Google OAuth

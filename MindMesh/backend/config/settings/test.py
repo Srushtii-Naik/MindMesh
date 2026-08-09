@@ -21,6 +21,16 @@ DATABASES = {
 
 EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
 
+# DRF's ScopedRateThrottle (config/settings/base.py) reads/writes through the
+# default cache. Overridden here to an in-process cache for the same reason
+# DATABASES/EMAIL_BACKEND are overridden above — tests must not depend on a
+# running Redis instance.
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+}
+
 # Tasks run synchronously, in-process — no broker required for tests.
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True

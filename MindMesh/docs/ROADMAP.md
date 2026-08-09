@@ -64,13 +64,13 @@ Enable secure account creation, login, and session management as the gateway to 
 - Milestone 1 (Project Foundation)
 
 **Completion Checklist:**
-- [ ] Registration and login endpoints implemented and validated
-- [ ] Google OAuth flow implemented end-to-end
-- [ ] JWT issuance, refresh, and revocation working as per ARCHITECTURE.md
-- [ ] Password reset flow functional (request + confirm)
-- [ ] Profile and settings screens functional on frontend
-- [ ] All auth endpoints covered by input validation and rate limiting
-- [ ] Passwords hashed; no plaintext credentials anywhere
+- [x] Registration and login endpoints implemented and validated
+- [x] Google OAuth flow implemented end-to-end
+- [x] JWT issuance, refresh, and revocation working as per ARCHITECTURE.md
+- [x] Password reset flow functional (request + confirm)
+- [x] Profile and settings screens functional on frontend
+- [x] All auth endpoints covered by input validation and rate limiting
+- [x] Passwords hashed; no plaintext credentials anywhere
 
 ---
 
