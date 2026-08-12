@@ -33,12 +33,12 @@ Establish a clean, production-ready project skeleton that the entire product wil
 - None (starting point of the project).
 
 **Completion Checklist:**
-- [ ] Frontend boots via Vite with Tailwind configured
-- [ ] Backend boots via Django with DRF installed and configured
-- [ ] Docker Compose brings up frontend, backend, PostgreSQL, and Redis together
-- [ ] `.env` structure defined and documented, no secrets committed
-- [ ] Base folder structure matches ARCHITECTURE.md exactly
-- [ ] Health-check endpoint returns a successful response to the frontend
+- [x] Frontend boots via Vite with Tailwind configured
+- [x] Backend boots via Django with DRF installed and configured
+- [x] Docker Compose brings up frontend, backend, PostgreSQL, and Redis together
+- [x] `.env` structure defined and documented, no secrets committed
+- [x] Base folder structure matches ARCHITECTURE.md exactly
+- [x] Health-check endpoint returns a successful response to the frontend
 
 ---
 
@@ -94,11 +94,11 @@ Provide a single, calm home base that orients the user and surfaces what matters
 - Milestone 2 (Authentication & User Management)
 
 **Completion Checklist:**
-- [ ] Dashboard renders correctly across mobile and desktop breakpoints
-- [ ] Quick actions route correctly to their respective modules (stubbed if modules not yet built)
-- [ ] Today's summary and upcoming events pull from real data once available, placeholders otherwise
-- [ ] Recent activity feed reflects real user actions
-- [ ] UI adheres to design philosophy (minimal, calm, accessible) per PROJECT_RULES.md
+- [x] Dashboard renders correctly across mobile and desktop breakpoints
+- [x] Quick actions route correctly to their respective modules (stubbed if modules not yet built)
+- [x] Today's summary and upcoming events pull from real data once available, placeholders otherwise
+- [x] Recent activity feed reflects real user actions
+- [x] UI adheres to design philosophy (minimal, calm, accessible) per PROJECT_RULES.md
 
 ---
 

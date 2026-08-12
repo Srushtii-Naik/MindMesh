@@ -2,7 +2,7 @@
 
 **The AI companion that remembers your life, so you don't have to manage it across a dozen apps.**
 
-> Status: In Development — Milestone 2 (Authentication & User Management) Complete
+> Status: In Development — Milestone 3 (Dashboard) Complete
 
 ---
 
@@ -195,7 +195,7 @@ Milestones are sequenced in strict dependency order, from `PROJECT_RULES.md`-ali
 |---|---|---|---|
 | 1 | Project Foundation | — | ✅ Complete |
 | 2 | Authentication & User Management | Milestone 1 | ✅ Complete |
-| 3 | Dashboard | Milestone 2 | Not started |
+| 3 | Dashboard | Milestone 2 | ✅ Complete |
 | 4 | Task Management | Milestone 3 | Not started |
 | 5 | Calendar & Scheduling | Milestone 4 | Not started |
 | 6 | Notes & Knowledge | Milestone 2 | Not started |

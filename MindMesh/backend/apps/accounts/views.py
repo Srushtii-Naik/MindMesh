@@ -12,7 +12,6 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
-from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from apps.accounts.serializers import (
@@ -38,6 +37,7 @@ from apps.accounts.services import (
     get_settings_for_user,
     issue_tokens_for_user,
     list_sessions,
+    logout_session,
     register_user,
     request_password_reset,
     revoke_all_sessions,
@@ -130,8 +130,7 @@ class LogoutView(APIView):
             )
 
         try:
-            token = RefreshToken(refresh_token)
-            token.blacklist()
+            logout_session(refresh_token)
         except TokenError:
             return Response(
                 {'detail': 'Refresh token is invalid or already expired.', 'code': 'invalid_token'},

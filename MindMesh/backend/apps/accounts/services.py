@@ -95,6 +95,19 @@ def issue_tokens_for_user(user: User) -> dict[str, str]:
     }
 
 
+def logout_session(refresh_token: str) -> None:
+    """
+    Blacklist the given refresh token, ending that session (sign-out).
+
+    Raises `rest_framework_simplejwt.exceptions.TokenError` for a missing,
+    malformed, or already-invalidated token — left for the view to translate
+    into an HTTP response, per ARCHITECTURE.md Section 3 (views handle HTTP
+    concerns; services handle business rules).
+    """
+    token = RefreshToken(refresh_token)
+    token.blacklist()
+
+
 # --------------------------------------------------------------------------
 # Google OAuth
 # --------------------------------------------------------------------------

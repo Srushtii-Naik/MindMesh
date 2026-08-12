@@ -22,5 +22,13 @@ export const ROUTES = {
   RESET_PASSWORD: '/reset-password',
   PROFILE: '/profile',
   SETTINGS: '/settings',
+  // Quick-action targets for modules not yet built (ROADMAP.md Milestone 3:
+  // "Quick actions route correctly to their respective modules (stubbed if
+  // modules not yet built)"). Each renders a placeholder until its own
+  // milestone (4, 6, 5, 7 respectively) implements it for real.
+  TASKS: '/tasks',
+  NOTES: '/notes',
+  CALENDAR: '/calendar',
+  AI_CHAT: '/chat',
   NOT_FOUND: '*',
 } as const;
