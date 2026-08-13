@@ -13,6 +13,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/', include('common.urls')),
     path('api/v1/auth/', include('apps.accounts.urls')),
+    path('api/v1/tasks/', include('apps.tasks.urls')),
     # Further domain routes are added starting in later milestones, e.g.:
-    # path('api/v1/tasks/', include('apps.tasks.urls')),
+    # path('api/v1/notes/', include('apps.notes.urls')),
 ]

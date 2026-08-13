@@ -7,3 +7,11 @@ export interface ApiErrorResponse {
   detail: string;
   code?: string;
 }
+
+/** Shape returned by any endpoint using DRF's PageNumberPagination. */
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}

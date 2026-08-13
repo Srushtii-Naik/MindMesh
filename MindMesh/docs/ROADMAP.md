@@ -123,11 +123,11 @@ Deliver a complete, dependable productivity module as the first core utility of 
 - Milestone 3 (Dashboard) — for surfacing tasks on the home screen
 
 **Completion Checklist:**
-- [ ] Full CRUD for tasks and subtasks implemented
-- [ ] Priorities, due dates, and categories functional and filterable
-- [ ] Recurring task logic implemented and tested
-- [ ] Smart suggestions surfaced in the UI (baseline logic in place)
-- [ ] Dashboard quick actions and "Today's Summary" reflect real task data
+- [x] Full CRUD for tasks and subtasks implemented
+- [x] Priorities, due dates, and categories functional and filterable
+- [x] Recurring task logic implemented and tested
+- [x] Smart suggestions surfaced in the UI (baseline logic in place)
+- [x] Dashboard quick actions and "Today's Summary" reflect real task data
 
 ---
 
