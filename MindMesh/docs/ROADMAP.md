@@ -151,11 +151,11 @@ Provide a fully functional scheduling system that integrates with tasks and remi
 - Milestone 4 (Task Management) — calendar entries relate to tasks and due dates
 
 **Completion Checklist:**
-- [ ] Calendar views render correctly with real event/task data
-- [ ] Event CRUD implemented and validated
-- [ ] Daily and weekly planners functional
-- [ ] Reminder data model in place (delivery mechanism deferred to Milestone 9)
-- [ ] Calendar reflects task due dates and recurring tasks accurately
+- [x] Calendar views render correctly with real event/task data
+- [x] Event CRUD implemented and validated
+- [x] Daily and weekly planners functional
+- [x] Reminder data model in place (delivery mechanism deferred to Milestone 9)
+- [x] Calendar reflects task due dates and recurring tasks accurately
 
 ---
 

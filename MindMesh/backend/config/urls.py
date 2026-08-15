@@ -14,6 +14,8 @@ urlpatterns = [
     path('api/v1/', include('common.urls')),
     path('api/v1/auth/', include('apps.accounts.urls')),
     path('api/v1/tasks/', include('apps.tasks.urls')),
+    path('api/v1/calendar/', include('apps.calendar_events.urls')),
+    path('api/v1/reminders/', include('apps.reminders.urls')),
     # Further domain routes are added starting in later milestones, e.g.:
     # path('api/v1/notes/', include('apps.notes.urls')),
 ]

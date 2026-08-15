@@ -27,6 +27,7 @@ from apps.tasks.repositories import (
     get_task_for_user,
     list_categories_for_user,
     list_subtasks_for_task,
+    list_tasks_due_between,
     list_tasks_for_user,
     soft_delete_subtask,
     soft_delete_task,
@@ -369,6 +370,14 @@ def get_task_suggestions(user: User) -> list[dict]:
             break  # one is enough to act on; avoid flooding the UI
 
     return suggestions
+
+
+def get_tasks_due_between(user: User, start_date: date, end_date: date):
+    """Service-layer entry point for other domains (e.g. calendar_events) to read
+    task due dates without importing the Task model directly, per ARCHITECTURE.md
+    Section 3 ("cross-domain communication happens through service interfaces,
+    not direct model imports across apps")."""
+    return list_tasks_due_between(user, start_date, end_date)
 
 
 def get_today_summary(user: User) -> dict:

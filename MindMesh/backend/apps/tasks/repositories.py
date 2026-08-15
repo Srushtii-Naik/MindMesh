@@ -99,6 +99,14 @@ def count_tasks_completed_on(user: User, target_date: date) -> int:
     ).count()
 
 
+def list_tasks_due_between(user: User, start_date: date, end_date: date) -> QuerySet[Task]:
+    """Tasks with a due_date inside [start_date, end_date] (ROADMAP.md Milestone 5 —
+    calendar integration). Recurring tasks generate a new Task row per occurrence
+    (see generate_next_occurrence in services.py), so this naturally picks up every
+    occurrence whose due_date falls in range."""
+    return list_tasks_for_user(user).filter(due_date__gte=start_date, due_date__lte=end_date)
+
+
 # --------------------------------------------------------------------------
 # SubTask
 # --------------------------------------------------------------------------

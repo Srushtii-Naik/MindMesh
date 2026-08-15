@@ -11,6 +11,7 @@ import {
   ProfilePage,
   SettingsPage,
 } from '@/features/auth';
+import { CalendarPage } from '@/features/calendar';
 import { DashboardPage } from '@/features/dashboard';
 import { TasksPage } from '@/features/tasks';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
@@ -21,10 +22,10 @@ import { ROUTES } from '@/constants';
  *
  * Per ARCHITECTURE.md Section 2: route-level code splitting is expected as
  * feature modules are added. At this stage, auth (login/register/password
- * reset), account management (profile/settings), the dashboard (home), and
- * Tasks (ROADMAP.md Milestone 4) exist. Notes/Calendar/AI Chat remain
- * stubbed with ComingSoonPage as quick-action targets until their own
- * milestones (6, 5, 7) build them.
+ * reset), account management (profile/settings), the dashboard (home),
+ * Tasks (ROADMAP.md Milestone 4), and Calendar & Scheduling (Milestone 5)
+ * exist. Notes/AI Chat remain stubbed with ComingSoonPage as quick-action
+ * targets until their own milestones (6, 7) build them.
  */
 export const router = createBrowserRouter([
   {
@@ -58,12 +59,7 @@ export const router = createBrowserRouter([
           },
           {
             path: ROUTES.CALENDAR.slice(1),
-            element: (
-              <ComingSoonPage
-                title="Calendar"
-                description="Calendar & scheduling is coming in a future milestone."
-              />
-            ),
+            element: <CalendarPage />,
           },
           {
             path: ROUTES.AI_CHAT.slice(1),

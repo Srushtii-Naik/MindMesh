@@ -2,7 +2,7 @@
 
 **The AI companion that remembers your life, so you don't have to manage it across a dozen apps.**
 
-> Status: In Development — Milestone 4 (Task Management) Complete
+> Status: In Development — Milestone 5 (Calendar & Scheduling) Complete
 
 ---
 
@@ -197,7 +197,7 @@ Milestones are sequenced in strict dependency order, from `PROJECT_RULES.md`-ali
 | 2 | Authentication & User Management | Milestone 1 | ✅ Complete |
 | 3 | Dashboard | Milestone 2 | ✅ Complete |
 | 4 | Task Management | Milestone 3 | ✅ Complete |
-| 5 | Calendar & Scheduling | Milestone 4 | Not started |
+| 5 | Calendar & Scheduling | Milestone 4 | ✅ Complete |
 | 6 | Notes & Knowledge | Milestone 2 | Not started |
 | 7 | AI Companion | Milestones 4, 5, 6 | Not started |
 | 8 | Memory Engine | Milestone 7 | Not started |

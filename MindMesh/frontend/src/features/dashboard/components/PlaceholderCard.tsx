@@ -5,12 +5,11 @@ interface PlaceholderCardProps {
 
 /**
  * Shared shell for dashboard cards whose real data source doesn't exist
- * yet (Upcoming Events needs Calendar — Milestone 5; AI Insights needs the
- * AI Companion — Milestone 7). Today's Summary graduated off this shell in
- * Milestone 4, once Task Management gave it real data to show. Per
- * ROADMAP.md, these two are explicitly allowed to stay placeholder-only
- * for now: "pull from real data once available, placeholders otherwise" /
- * "placeholder-ready, wired to AI module once available".
+ * yet (AI Insights needs the AI Companion — Milestone 7). Today's Summary
+ * graduated off this shell in Milestone 4, and Upcoming Events graduated
+ * in Milestone 5, once their domains had real data to show. Per
+ * ROADMAP.md, AI Insights is explicitly allowed to stay placeholder-only
+ * for now: "placeholder-ready, wired to AI module once available".
  */
 export function PlaceholderCard({ title, message }: PlaceholderCardProps) {
   return (
