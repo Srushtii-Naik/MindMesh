@@ -179,11 +179,11 @@ Establish a knowledge management system where users can capture and organize inf
 - Milestone 2 (Authentication & User Management); independent of Milestones 4–5 but sequenced after them for team focus and dashboard integration
 
 **Completion Checklist:**
-- [ ] Rich note creation/editing implemented
-- [ ] Categories and tags functional and filterable
-- [ ] Search returns accurate, performant results
-- [ ] Attachments upload/storage implemented securely
-- [ ] AI summaries wired through the AI abstraction layer (basic implementation; refined in Milestone 7)
+- [x] Rich note creation/editing implemented
+- [x] Categories and tags functional and filterable
+- [x] Search returns accurate, performant results
+- [x] Attachments upload/storage implemented securely
+- [x] AI summaries wired through the AI abstraction layer (basic implementation; refined in Milestone 7)
 
 ---
 

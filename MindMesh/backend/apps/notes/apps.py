@@ -5,9 +5,10 @@ class NotesConfig(AppConfig):
     """
     notes domain app.
 
-    Scaffolded per ARCHITECTURE.md Section 3 & 9 module boundaries.
-    Models, serializers, services, and views are implemented in this app's
-    dedicated ROADMAP.md milestone — not part of Project Foundation.
+    Implements ROADMAP.md Milestone 6 (Notes & Knowledge): categories, tags,
+    rich notes, attachments, search, and AI summaries (via the AI
+    abstraction layer in apps.ai_companion). Follows the layering in
+    ARCHITECTURE.md Section 3.
     """
 
     default_auto_field = 'django.db.models.BigAutoField'

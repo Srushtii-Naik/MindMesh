@@ -45,3 +45,19 @@ PASSWORD_HASHERS = [
     # Fast hasher for tests only — never used outside the test settings module.
     'django.contrib.auth.hashers.MD5PasswordHasher',
 ]
+
+# Notes attachments (ROADMAP.md Milestone 6) are written through Django's
+# storage API regardless of DATABASES — kept in memory so the test suite
+# never touches the real filesystem or leaves files behind.
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.InMemoryStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+    },
+}
+
+# Never call a real AI vendor from the test suite — StubProvider is
+# deterministic and fully offline (apps/ai_companion/providers.py).
+AI_PROVIDER = 'stub'

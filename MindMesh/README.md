@@ -2,7 +2,7 @@
 
 **The AI companion that remembers your life, so you don't have to manage it across a dozen apps.**
 
-> Status: In Development — Milestone 5 (Calendar & Scheduling) Complete
+> Status: In Development — Milestone 6 (Notes & Knowledge) Complete
 
 ---
 
@@ -198,7 +198,7 @@ Milestones are sequenced in strict dependency order, from `PROJECT_RULES.md`-ali
 | 3 | Dashboard | Milestone 2 | ✅ Complete |
 | 4 | Task Management | Milestone 3 | ✅ Complete |
 | 5 | Calendar & Scheduling | Milestone 4 | ✅ Complete |
-| 6 | Notes & Knowledge | Milestone 2 | Not started |
+| 6 | Notes & Knowledge | Milestone 2 | ✅ Complete |
 | 7 | AI Companion | Milestones 4, 5, 6 | Not started |
 | 8 | Memory Engine | Milestone 7 | Not started |
 | 9 | Notifications | Milestone 5, Milestone 1 infra | Not started |
@@ -229,6 +229,8 @@ docker compose up --build
 ```
 
 Google OAuth sign-in requires `GOOGLE_OAUTH_CLIENT_ID` (backend) and `VITE_GOOGLE_OAUTH_CLIENT_ID` (frontend) to be set to the same OAuth client ID; without it, the Google sign-in button stays hidden and email/password auth works as normal.
+
+Notes' AI summaries (Milestone 6) work out of the box with no configuration — `AI_PROVIDER` defaults to an offline `stub` provider. Set `AI_PROVIDER=gemini` or `AI_PROVIDER=openai` with the matching `GEMINI_API_KEY`/`OPENAI_API_KEY` to use a real model instead.
 
 ## Documentation
 

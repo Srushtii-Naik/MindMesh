@@ -198,6 +198,10 @@ REST_FRAMEWORK = {
         'auth_token_refresh': '30/min',
         'auth_password_reset': '5/min',
         'auth_password_reset_confirm': '5/min',
+        # AI-chat/summary endpoints (PROJECT_RULES.md Section 8 — "Rate
+        # limiting on auth and AI-chat endpoints at minimum") — protects
+        # against runaway AI provider cost, not just abuse.
+        'notes_ai_summary': '20/min',
     },
 }
 
@@ -250,3 +254,43 @@ FRONTEND_URL = env('FRONTEND_URL', default='http://localhost:5173')
 
 EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='MindMesh <no-reply@mindmesh.app>')
+
+# --------------------------------------------------------------------------
+# Media files — user uploads (ROADMAP.md Milestone 6: Notes attachments).
+# Not served under a public MEDIA_URL route; apps.notes serves attachments
+# exclusively through its own authenticated, ownership-checked download
+# endpoint (see apps/notes/views.py), so no urls.py wiring is needed here.
+# --------------------------------------------------------------------------
+
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# --------------------------------------------------------------------------
+# Notes attachments (ROADMAP.md Milestone 6 — "Attachments upload/storage
+# implemented securely"). Kept here rather than hardcoded in apps/notes so
+# limits are environment-configurable without a code change.
+# --------------------------------------------------------------------------
+
+NOTE_ATTACHMENT_MAX_SIZE_BYTES = env.int('NOTE_ATTACHMENT_MAX_SIZE_BYTES', default=10 * 1024 * 1024)
+NOTE_ATTACHMENT_ALLOWED_CONTENT_TYPES = [
+    'image/png',
+    'image/jpeg',
+    'image/gif',
+    'image/webp',
+    'application/pdf',
+    'text/plain',
+]
+
+# --------------------------------------------------------------------------
+# AI Provider Abstraction Layer (ARCHITECTURE.md Section 7). Brought forward
+# minimally in Milestone 6 to power Notes' AI summaries; the full chat/
+# memory surface is configured further in Milestones 7-8. Defaults to the
+# offline `stub` provider so the app is fully usable without vendor API
+# keys — set AI_PROVIDER to `gemini` or `openai` once keys are supplied.
+# --------------------------------------------------------------------------
+
+AI_PROVIDER = env('AI_PROVIDER', default='stub')
+GEMINI_API_KEY = env('GEMINI_API_KEY', default='')
+OPENAI_API_KEY = env('OPENAI_API_KEY', default='')
+OPENAI_MODEL = env('OPENAI_MODEL', default='gpt-4o-mini')
+AI_SUMMARY_TIMEOUT_SECONDS = env.int('AI_SUMMARY_TIMEOUT_SECONDS', default=15)
