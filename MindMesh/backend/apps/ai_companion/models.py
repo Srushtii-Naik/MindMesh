@@ -12,13 +12,33 @@ it is hard-deleted along with its conversation (CASCADE) rather than
 soft-deleted — mirroring apps.notes.Attachment's reasoning for immutable
 child records.
 
-`MemoryFact` is the *foundational* long-term memory store called for by this
-milestone's completion checklist ("Memory extraction logic captures durable
-facts — storage refined in Milestone 8"). It deliberately stays minimal —
-a fact string plus provenance — since the richer memory engine (dedup,
-categorization, embeddings/RAG-readiness per ARCHITECTURE.md Section 7) is
-explicitly Milestone 8 scope. This mirrors how apps.reminders.Reminder
-modeled just enough in Milestone 5 for Milestone 9 to build on later.
+`MemoryFact` started as the *foundational* long-term memory store built in
+Milestone 7 (a fact string plus provenance, per that milestone's completion
+checklist: "Memory extraction logic captures durable facts — storage
+refined in Milestone 8"). ROADMAP.md Milestone 8 ("Memory Engine") refines
+it into MindMesh's durable memory record:
+
+- `category` classifies each fact into the buckets ARCHITECTURE.md Section 7
+  names for the Memory Manager ("preferences, recurring commitments,
+  important dates") plus the general personal-fact/relationship buckets
+  PRD.md Section 11 describes — captured via
+  `apps.ai_companion.providers.categorize_memory_fact`.
+- `is_active` / `deleted_at` make MemoryFact user-manageable content, soft
+  deleted like `Conversation` above, since PRD.md Section 13 requires users
+  be able to "view, edit, or delete stored memory at any time."
+- `updated_at` is added now that facts are user-editable, not just
+  AI-appended.
+
+Deliberately still a flat fact string rather than a structured schema with
+dedicated columns per category (e.g. a separate `important_date` date
+field) — `category` + `fact_text` covers Milestone 8's scope without
+guessing at a richer schema no feature yet needs (PROJECT_RULES.md Section
+1: "When in doubt, leave it out"). Future embedding-based retrieval
+(ARCHITECTURE.md Section 4/7 RAG readiness) needs no rework of this table:
+a `MemoryFactEmbedding` table can reference `MemoryFact.id` the same way
+`Message` already references `Conversation.id`, kept behind
+`apps.ai_companion.repositories` so domain code never notices the change —
+exactly the pattern ARCHITECTURE.md Section 4 describes for embeddings.
 """
 
 import uuid
@@ -89,13 +109,31 @@ class Message(models.Model):
         return f'{self.role}: {preview}'
 
 
+class MemoryCategory(models.TextChoices):
+    """
+    Buckets a `MemoryFact` can fall into (ROADMAP.md Milestone 8 features:
+    "User preferences", "Important dates", "Personal facts"; extended with
+    ROUTINE/RELATIONSHIP to match the fuller vocabulary ARCHITECTURE.md
+    Section 7 and PRD.md Section 11 use — "preferences, routines,
+    relationships, and important recurring context"). Assigned by
+    `apps.ai_companion.providers.categorize_memory_fact`, never guessed at
+    in the view or repository layers.
+    """
+
+    PREFERENCE = 'preference', 'Preference'
+    IMPORTANT_DATE = 'important_date', 'Important date'
+    ROUTINE = 'routine', 'Routine'
+    RELATIONSHIP = 'relationship', 'Relationship'
+    PERSONAL_FACT = 'personal_fact', 'Personal fact'
+
+
 class MemoryFact(models.Model):
     """
-    A durable fact extracted from the user's conversations
-    (ROADMAP.md Milestone 7: "Memory extraction — foundational; full engine
-    in Milestone 8"). Deliberately a flat fact string rather than a
-    structured schema — Milestone 8 owns categorization, deduplication, and
-    the embeddings-based recall path described in ARCHITECTURE.md Section 7.
+    A durable fact the AI companion remembers about the user — MindMesh's
+    long-term memory record (ROADMAP.md Milestone 8: "Long-term memory
+    storage... AI recall"). Extracted automatically from conversations via
+    `apps.ai_companion.services.extract_and_store_memory_from_message`, and
+    user-manageable thereafter (view/edit/delete) per PRD.md Section 13.
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -103,6 +141,9 @@ class MemoryFact(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='ai_memory_facts'
     )
     fact_text = models.CharField(max_length=500)
+    category = models.CharField(
+        max_length=20, choices=MemoryCategory.choices, default=MemoryCategory.PERSONAL_FACT
+    )
 
     source_conversation = models.ForeignKey(
         Conversation,
@@ -112,7 +153,13 @@ class MemoryFact(models.Model):
         related_name='extracted_facts',
     )
 
+    # Soft delete (PROJECT_RULES.md Section 7) — mirrors Conversation above,
+    # now that facts are user-editable/deletable rather than append-only.
+    is_active = models.BooleanField(default=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'ai_companion_memory_fact'
@@ -120,10 +167,15 @@ class MemoryFact(models.Model):
         verbose_name = 'memory fact'
         verbose_name_plural = 'memory facts'
         indexes = [
-            models.Index(fields=['user', 'created_at']),
+            models.Index(fields=['user', 'is_active', 'created_at']),
+            models.Index(fields=['user', 'category']),
         ]
         constraints = [
-            models.UniqueConstraint(fields=['user', 'fact_text'], name='unique_memory_fact_per_user')
+            models.UniqueConstraint(
+                fields=['user', 'fact_text'],
+                condition=models.Q(is_active=True),
+                name='unique_active_memory_fact_per_user',
+            )
         ]
 
     def __str__(self) -> str:

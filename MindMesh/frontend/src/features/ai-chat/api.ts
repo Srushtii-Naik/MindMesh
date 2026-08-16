@@ -5,6 +5,8 @@ import type {
   Conversation,
   ConversationPayload,
   MemoryFact,
+  MemoryFactFilters,
+  MemoryFactPayload,
   Message,
   MessagePayload,
 } from '@/features/ai-chat/types';
@@ -73,7 +75,21 @@ export async function getAISuggestionsRequest(): Promise<AISuggestion[]> {
   return data;
 }
 
-export async function listMemoryFactsRequest(): Promise<MemoryFact[]> {
-  const { data } = await apiClient.get<MemoryFact[]>('/ai/memory/');
+export async function listMemoryFactsRequest(
+  filters: MemoryFactFilters = {}
+): Promise<MemoryFact[]> {
+  const { data } = await apiClient.get<MemoryFact[]>('/ai/memory/', { params: filters });
   return data;
+}
+
+export async function updateMemoryFactRequest(
+  factId: string,
+  payload: MemoryFactPayload
+): Promise<MemoryFact> {
+  const { data } = await apiClient.patch<MemoryFact>(`/ai/memory/${factId}/`, payload);
+  return data;
+}
+
+export async function deleteMemoryFactRequest(factId: string): Promise<void> {
+  await apiClient.delete(`/ai/memory/${factId}/`);
 }

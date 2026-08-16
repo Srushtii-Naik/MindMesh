@@ -11,6 +11,7 @@ from apps.ai_companion.views import (
     AISuggestionsView,
     ConversationDetailView,
     ConversationListCreateView,
+    MemoryFactDetailView,
     MemoryFactListView,
     MessageListCreateView,
 )
@@ -30,4 +31,5 @@ urlpatterns = [
     # Suggestions & Memory
     path('suggestions/', AISuggestionsView.as_view(), name='ai-suggestions'),
     path('memory/', MemoryFactListView.as_view(), name='ai-memory-list'),
+    path('memory/<uuid:fact_id>/', MemoryFactDetailView.as_view(), name='ai-memory-detail'),
 ]

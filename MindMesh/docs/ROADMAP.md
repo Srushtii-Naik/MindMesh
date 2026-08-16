@@ -235,11 +235,11 @@ Give the AI companion durable, structured long-term memory so it provides contin
 - Milestone 7 (AI Companion)
 
 **Completion Checklist:**
-- [ ] Long-term memory data model implemented per ARCHITECTURE.md
-- [ ] Preferences, important dates, and personal facts captured and stored correctly
-- [ ] AI recall demonstrably influences responses in later sessions
-- [ ] Memory storage designed to be extensible toward future embeddings/RAG without rework
-- [ ] User-facing controls to view/edit/delete stored memory (privacy and trust requirement)
+- [x] Long-term memory data model implemented per ARCHITECTURE.md
+- [x] Preferences, important dates, and personal facts captured and stored correctly
+- [x] AI recall demonstrably influences responses in later sessions
+- [x] Memory storage designed to be extensible toward future embeddings/RAG without rework
+- [x] User-facing controls to view/edit/delete stored memory (privacy and trust requirement)
 
 ---
 

@@ -17,22 +17,29 @@ from apps.ai_companion.serializers import (
     AISuggestionSerializer,
     ConversationSerializer,
     ConversationWriteSerializer,
+    MemoryFactFilterSerializer,
     MemoryFactSerializer,
+    MemoryFactWriteSerializer,
     MessageSerializer,
     MessageWriteSerializer,
 )
 from apps.ai_companion.services import (
     ChatResponseError,
     ConversationNotFoundError,
+    DuplicateMemoryFactError,
     EmptyMessageError,
+    MemoryFactNotFoundError,
     create_conversation_for_user,
     delete_conversation_for_user,
+    delete_memory_fact_for_user,
     get_ai_enhanced_suggestions,
     get_conversation,
+    get_memory_fact,
     list_conversations,
     list_memory_facts,
     list_messages,
     send_message_for_user,
+    update_memory_fact_for_user,
 )
 
 # --------------------------------------------------------------------------
@@ -167,12 +174,68 @@ class AISuggestionsView(APIView):
 
 
 class MemoryFactListView(APIView):
-    """GET /api/v1/ai/memory/ — the user's extracted memory facts
-    (read-only; view/edit/delete controls are Milestone 8 scope per
-    ROADMAP.md's completion checklist for that milestone)."""
+    """GET /api/v1/ai/memory/ — the user's stored memory facts
+    (ROADMAP.md Milestone 8: "User-facing controls to view... stored
+    memory"), optionally filtered by `category`."""
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request: Request) -> Response:
-        facts = list_memory_facts(request.user)
+        filters = MemoryFactFilterSerializer(data=request.query_params)
+        filters.is_valid(raise_exception=True)
+
+        facts = list_memory_facts(request.user, **filters.validated_data)
         return Response(MemoryFactSerializer(facts, many=True).data)
+
+
+class MemoryFactDetailView(APIView):
+    """
+    GET    /api/v1/ai/memory/<id>/ — retrieve a memory fact.
+    PATCH  /api/v1/ai/memory/<id>/ — edit a memory fact's text/category.
+    DELETE /api/v1/ai/memory/<id>/ — delete a memory fact.
+
+    The edit/delete controls are Milestone 8's trust/privacy requirement
+    (PRD.md Section 13: users "can view, edit, or delete stored memory at
+    any time").
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request, fact_id) -> Response:
+        try:
+            fact = get_memory_fact(request.user, fact_id)
+        except MemoryFactNotFoundError as exc:
+            return Response(
+                {'detail': str(exc), 'code': 'memory_fact_not_found'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(MemoryFactSerializer(fact).data)
+
+    def patch(self, request: Request, fact_id) -> Response:
+        serializer = MemoryFactWriteSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            fact = update_memory_fact_for_user(request.user, fact_id, **serializer.validated_data)
+        except MemoryFactNotFoundError as exc:
+            return Response(
+                {'detail': str(exc), 'code': 'memory_fact_not_found'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except DuplicateMemoryFactError as exc:
+            return Response(
+                {'detail': str(exc), 'code': 'memory_fact_duplicate'},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        return Response(MemoryFactSerializer(fact).data)
+
+    def delete(self, request: Request, fact_id) -> Response:
+        try:
+            delete_memory_fact_for_user(request.user, fact_id)
+        except MemoryFactNotFoundError as exc:
+            return Response(
+                {'detail': str(exc), 'code': 'memory_fact_not_found'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)

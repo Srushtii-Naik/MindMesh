@@ -3,10 +3,13 @@ Service layer — AI Companion.
 
 Per ARCHITECTURE.md Section 3: views call services; services never import
 DRF. `summarize_text` remains the cross-domain entry point apps.notes calls
-(Milestone 6). Milestone 7 adds the conversational surface: conversations,
+(Milestone 6). Milestone 7 added the conversational surface: conversations,
 messages, the Context Assembly Service, memory extraction, and AI-enhanced
 suggestions — all routed through apps.ai_companion.providers, the sole
-egress point to Gemini/OpenAI (PROJECT_RULES.md Section 10).
+egress point to Gemini/OpenAI (PROJECT_RULES.md Section 10). Milestone 8
+("Memory Engine") refines memory extraction into a categorized, durable
+store the user can view/edit/delete, and folds it back into the Context
+Assembly Service's digest so recall demonstrably shapes later replies.
 
 Context Assembly Service (ARCHITECTURE.md Section 7): before each AI call,
 gathers relevant context from the user's other domains. Reads them only
@@ -27,20 +30,23 @@ from __future__ import annotations
 from django.utils import timezone
 
 from apps.accounts.models import User
-from apps.ai_companion.models import Conversation, MemoryFact, Message, MessageRole
-from apps.ai_companion.providers import AIProviderError, get_ai_provider
+from apps.ai_companion.models import Conversation, MemoryCategory, MemoryFact, Message, MessageRole
+from apps.ai_companion.providers import AIProviderError, categorize_memory_fact, get_ai_provider
 from apps.ai_companion.repositories import (
     create_conversation,
     create_memory_fact,
     create_message,
     get_conversation_for_user,
+    get_memory_fact_for_user,
     list_conversations_for_user,
     list_memory_facts_for_user,
     list_messages_for_conversation,
     memory_fact_exists_for_user,
     soft_delete_conversation,
+    soft_delete_memory_fact,
     touch_conversation,
     update_conversation,
+    update_memory_fact,
 )
 
 # Cross-domain entry points only (ARCHITECTURE.md Section 3) — never the
@@ -74,6 +80,15 @@ class EmptyMessageError(Exception):
 
 class ChatResponseError(Exception):
     """Raised when the AI provider cannot produce a chat response."""
+
+
+class MemoryFactNotFoundError(Exception):
+    """Raised when a memory fact cannot be found for the requesting user."""
+
+
+class DuplicateMemoryFactError(Exception):
+    """Raised when editing a fact's text would collide with another of the
+    user's existing active facts."""
 
 
 # --------------------------------------------------------------------------
@@ -138,12 +153,47 @@ def assemble_context_for_user(user: User) -> str:
         note_titles = ', '.join(note.title for note in recent_notes)
         lines.append(f'Recently written notes: {note_titles}.')
 
-    memory_facts = list(list_memory_facts_for_user(user)[:5])
-    if memory_facts:
-        fact_texts = '; '.join(fact.fact_text for fact in memory_facts)
-        lines.append(f'Known about the user: {fact_texts}.')
+    lines.extend(_describe_memory_facts(user))
 
     return ' '.join(lines)
+
+
+# Cap on how many stored facts are digested into context per call — keeps
+# the prompt small and privacy-minimal (PROJECT_RULES.md Section 10 & 11),
+# while still covering every category the user has facts in.
+MAX_CONTEXT_MEMORY_FACTS = 8
+
+_MEMORY_CATEGORY_LABELS: dict[str, str] = {
+    MemoryCategory.PREFERENCE: 'Preferences',
+    MemoryCategory.IMPORTANT_DATE: 'Important dates',
+    MemoryCategory.ROUTINE: 'Routines',
+    MemoryCategory.RELATIONSHIP: 'Relationships',
+    MemoryCategory.PERSONAL_FACT: 'Personal facts',
+}
+
+
+def _describe_memory_facts(user: User) -> list[str]:
+    """
+    Renders the user's stored MemoryFacts into a short, grouped digest for
+    the Context Assembly Service (ROADMAP.md Milestone 8: "AI recall
+    demonstrably influences responses in later sessions"). Grouping by
+    category — rather than the flat "Known about the user: ..." line
+    Milestone 7 used — lets the assistant weigh a preference differently
+    from an important date without any change to the provider contract.
+    """
+    facts = list(list_memory_facts_for_user(user)[:MAX_CONTEXT_MEMORY_FACTS])
+    if not facts:
+        return []
+
+    grouped: dict[str, list[str]] = {}
+    for fact in facts:
+        grouped.setdefault(fact.category, []).append(fact.fact_text)
+
+    return [
+        f'{label}: {"; ".join(grouped[category])}.'
+        for category, label in _MEMORY_CATEGORY_LABELS.items()
+        if category in grouped
+    ]
 
 
 # --------------------------------------------------------------------------
@@ -254,7 +304,9 @@ def _enqueue_memory_extraction(*, user_id, conversation_id, message_id) -> None:
 
 def extract_and_store_memory_from_message(user: User, conversation: Conversation, message: Message) -> list[MemoryFact]:
     """Runs the AI abstraction layer's `extract_memory` on a single message
-    and persists any new, non-duplicate facts. Called from the Celery task
+    and persists any new, non-duplicate facts, each classified into a
+    MemoryCategory via `apps.ai_companion.providers.categorize_memory_fact`
+    (ROADMAP.md Milestone 8). Called from the Celery task
     (apps.ai_companion.tasks), never inline in the request/response cycle."""
     if message.role != MessageRole.USER:
         return []
@@ -272,13 +324,49 @@ def extract_and_store_memory_from_message(user: User, conversation: Conversation
             continue
         if memory_fact_exists_for_user(user, fact_text):
             continue
-        created.append(create_memory_fact(user=user, fact_text=fact_text, source_conversation=conversation))
+        category = categorize_memory_fact(fact_text)
+        created.append(
+            create_memory_fact(
+                user=user, fact_text=fact_text, category=category, source_conversation=conversation
+            )
+        )
 
     return created
 
 
-def list_memory_facts(user: User):
-    return list_memory_facts_for_user(user)
+def list_memory_facts(user: User, *, category: str | None = None):
+    """The user's stored memory facts (ROADMAP.md Milestone 8: "User-facing
+    controls to view... stored memory"), optionally filtered by category."""
+    return list_memory_facts_for_user(user, category=category)
+
+
+def get_memory_fact(user: User, fact_id) -> MemoryFact:
+    fact = get_memory_fact_for_user(user, fact_id)
+    if fact is None:
+        raise MemoryFactNotFoundError('Memory fact not found.')
+    return fact
+
+
+def update_memory_fact_for_user(user: User, fact_id, **fields) -> MemoryFact:
+    """Milestone 8: "User-facing controls to... edit... stored memory."
+    Only `fact_text` and `category` are editable; provenance
+    (`source_conversation`) is left untouched by a user edit."""
+    fact = get_memory_fact(user, fact_id)
+
+    if 'fact_text' in fields:
+        fact_text = fields['fact_text'].strip()
+        if memory_fact_exists_for_user(user, fact_text, exclude_id=fact.id):
+            raise DuplicateMemoryFactError(f'You already have a memory fact saying "{fact_text}".')
+        fields['fact_text'] = fact_text
+
+    return update_memory_fact(fact, **fields)
+
+
+def delete_memory_fact_for_user(user: User, fact_id) -> None:
+    """Milestone 8: "User-facing controls to... delete stored memory" —
+    the trust/privacy requirement from PRD.md Section 13."""
+    fact = get_memory_fact(user, fact_id)
+    soft_delete_memory_fact(fact)
 
 
 # --------------------------------------------------------------------------

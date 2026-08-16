@@ -2,11 +2,13 @@
 
 import pytest
 
+from apps.ai_companion.models import MemoryCategory
 from apps.ai_companion.providers import (
     AIProviderError,
     GeminiProvider,
     OpenAIProvider,
     StubProvider,
+    categorize_memory_fact,
     get_ai_provider,
 )
 
@@ -264,3 +266,26 @@ class TestOpenAIProviderExtractMemory:
         facts = provider.extract_memory('I live in Bengaluru.')
 
         assert any('bengaluru' in fact.lower() for fact in facts)
+
+
+class TestCategorizeMemoryFact:
+    """ROADMAP.md Milestone 8 — deterministic classification applied by the
+    service layer to every extracted fact, regardless of provider."""
+
+    def test_classifies_preference(self):
+        assert categorize_memory_fact('Prefers tea over coffee') == MemoryCategory.PREFERENCE
+
+    def test_classifies_important_date(self):
+        assert categorize_memory_fact("Daughter's birthday is June 3rd") == MemoryCategory.IMPORTANT_DATE
+
+    def test_classifies_routine(self):
+        assert categorize_memory_fact('Goes for a run every morning') == MemoryCategory.ROUTINE
+
+    def test_classifies_relationship(self):
+        assert categorize_memory_fact('My son plays football on Saturdays') == MemoryCategory.RELATIONSHIP
+
+    def test_defaults_to_personal_fact(self):
+        assert categorize_memory_fact('Is a nurse') == MemoryCategory.PERSONAL_FACT
+
+    def test_handles_empty_string(self):
+        assert categorize_memory_fact('') == MemoryCategory.PERSONAL_FACT

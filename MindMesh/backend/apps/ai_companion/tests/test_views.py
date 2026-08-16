@@ -180,3 +180,127 @@ class TestMemoryFactListView:
         assert response.status_code == 200
         facts = [f['fact_text'] for f in response.json()]
         assert facts == ['Prefers tea']
+
+    def test_response_includes_category(self, auth_client, user):
+        from apps.ai_companion.models import MemoryCategory
+
+        MemoryFact.objects.create(user=user, fact_text='Prefers tea', category=MemoryCategory.PREFERENCE)
+
+        response = auth_client.get(reverse('ai-memory-list'))
+
+        assert response.status_code == 200
+        assert response.json()[0]['category'] == 'preference'
+
+    def test_filters_by_category(self, auth_client, user):
+        from apps.ai_companion.models import MemoryCategory
+
+        MemoryFact.objects.create(user=user, fact_text='Prefers tea', category=MemoryCategory.PREFERENCE)
+        MemoryFact.objects.create(user=user, fact_text='Is a teacher', category=MemoryCategory.PERSONAL_FACT)
+
+        response = auth_client.get(reverse('ai-memory-list'), {'category': 'preference'})
+
+        assert response.status_code == 200
+        facts = [f['fact_text'] for f in response.json()]
+        assert facts == ['Prefers tea']
+
+    def test_rejects_invalid_category(self, auth_client):
+        response = auth_client.get(reverse('ai-memory-list'), {'category': 'not-a-real-category'})
+        assert response.status_code == 400
+
+    def test_excludes_deleted_facts(self, auth_client, user):
+        fact = MemoryFact.objects.create(user=user, fact_text='Prefers tea')
+        fact.is_active = False
+        fact.save(update_fields=['is_active'])
+
+        response = auth_client.get(reverse('ai-memory-list'))
+
+        assert response.status_code == 200
+        assert response.json() == []
+
+
+class TestMemoryFactDetailView:
+    def test_requires_authentication(self, api_client, user):
+        fact = MemoryFact.objects.create(user=user, fact_text='Prefers tea')
+        response = api_client.get(reverse('ai-memory-detail', kwargs={'fact_id': fact.id}))
+        assert response.status_code == 401
+
+    def test_retrieve_own_memory_fact(self, auth_client, user):
+        fact = MemoryFact.objects.create(user=user, fact_text='Prefers tea')
+
+        response = auth_client.get(reverse('ai-memory-detail', kwargs={'fact_id': fact.id}))
+
+        assert response.status_code == 200
+        assert response.json()['fact_text'] == 'Prefers tea'
+
+    def test_retrieve_missing_fact_returns_404(self, auth_client):
+        response = auth_client.get(reverse('ai-memory-detail', kwargs={'fact_id': uuid.uuid4()}))
+        assert response.status_code == 404
+
+    def test_retrieve_other_users_fact_returns_404(self, auth_client, other_user):
+        foreign = MemoryFact.objects.create(user=other_user, fact_text='Not mine')
+        response = auth_client.get(reverse('ai-memory-detail', kwargs={'fact_id': foreign.id}))
+        assert response.status_code == 404
+
+    def test_edit_own_memory_fact(self, auth_client, user):
+        fact = MemoryFact.objects.create(user=user, fact_text='Prefers tea')
+
+        response = auth_client.patch(
+            reverse('ai-memory-detail', kwargs={'fact_id': fact.id}),
+            {'fact_text': 'Prefers green tea', 'category': 'preference'},
+            format='json',
+        )
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body['fact_text'] == 'Prefers green tea'
+        assert body['category'] == 'preference'
+
+    def test_edit_rejects_blank_text(self, auth_client, user):
+        fact = MemoryFact.objects.create(user=user, fact_text='Prefers tea')
+
+        response = auth_client.patch(
+            reverse('ai-memory-detail', kwargs={'fact_id': fact.id}),
+            {'fact_text': '   '},
+            format='json',
+        )
+
+        assert response.status_code == 400
+
+    def test_edit_rejects_duplicate_text(self, auth_client, user):
+        MemoryFact.objects.create(user=user, fact_text='Prefers tea')
+        fact = MemoryFact.objects.create(user=user, fact_text='Prefers coffee')
+
+        response = auth_client.patch(
+            reverse('ai-memory-detail', kwargs={'fact_id': fact.id}),
+            {'fact_text': 'Prefers tea'},
+            format='json',
+        )
+
+        assert response.status_code == 409
+
+    def test_edit_other_users_fact_returns_404(self, auth_client, other_user):
+        foreign = MemoryFact.objects.create(user=other_user, fact_text='Not mine')
+
+        response = auth_client.patch(
+            reverse('ai-memory-detail', kwargs={'fact_id': foreign.id}),
+            {'fact_text': 'Hijacked'},
+            format='json',
+        )
+
+        assert response.status_code == 404
+
+    def test_delete_own_memory_fact(self, auth_client, user):
+        fact = MemoryFact.objects.create(user=user, fact_text='Prefers tea')
+
+        response = auth_client.delete(reverse('ai-memory-detail', kwargs={'fact_id': fact.id}))
+
+        assert response.status_code == 204
+        fact.refresh_from_db()
+        assert fact.is_active is False
+
+    def test_delete_other_users_fact_returns_404(self, auth_client, other_user):
+        foreign = MemoryFact.objects.create(user=other_user, fact_text='Not mine')
+
+        response = auth_client.delete(reverse('ai-memory-detail', kwargs={'fact_id': foreign.id}))
+
+        assert response.status_code == 404

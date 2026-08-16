@@ -70,15 +70,44 @@ def get_message_for_conversation(conversation: Conversation, message_id) -> Mess
 # --------------------------------------------------------------------------
 
 
-def list_memory_facts_for_user(user: User) -> QuerySet[MemoryFact]:
-    return MemoryFact.objects.filter(user=user)
+def list_memory_facts_for_user(user: User, *, category: str | None = None) -> QuerySet[MemoryFact]:
+    queryset = MemoryFact.objects.filter(user=user, is_active=True)
+    if category:
+        queryset = queryset.filter(category=category)
+    return queryset
 
 
-def memory_fact_exists_for_user(user: User, fact_text: str) -> bool:
-    return MemoryFact.objects.filter(user=user, fact_text__iexact=fact_text).exists()
+def get_memory_fact_for_user(user: User, fact_id) -> MemoryFact | None:
+    return MemoryFact.objects.filter(user=user, id=fact_id, is_active=True).first()
 
 
-def create_memory_fact(*, user: User, fact_text: str, source_conversation: Conversation | None = None) -> MemoryFact:
+def memory_fact_exists_for_user(user: User, fact_text: str, *, exclude_id=None) -> bool:
+    queryset = MemoryFact.objects.filter(user=user, is_active=True, fact_text__iexact=fact_text)
+    if exclude_id is not None:
+        queryset = queryset.exclude(id=exclude_id)
+    return queryset.exists()
+
+
+def create_memory_fact(
+    *,
+    user: User,
+    fact_text: str,
+    category: str,
+    source_conversation: Conversation | None = None,
+) -> MemoryFact:
     return MemoryFact.objects.create(
-        user=user, fact_text=fact_text, source_conversation=source_conversation
+        user=user, fact_text=fact_text, category=category, source_conversation=source_conversation
     )
+
+
+def update_memory_fact(fact: MemoryFact, **fields) -> MemoryFact:
+    for field, value in fields.items():
+        setattr(fact, field, value)
+    fact.save()
+    return fact
+
+
+def soft_delete_memory_fact(fact: MemoryFact) -> None:
+    fact.is_active = False
+    fact.deleted_at = timezone.now()
+    fact.save(update_fields=['is_active', 'deleted_at', 'updated_at'])

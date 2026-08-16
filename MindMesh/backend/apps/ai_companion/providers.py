@@ -26,6 +26,8 @@ import re
 import requests
 from django.conf import settings
 
+from apps.ai_companion.models import MemoryCategory
+
 logger = logging.getLogger(__name__)
 
 
@@ -114,6 +116,53 @@ def _heuristic_extract_memory(text: str) -> list[str]:
                     facts.append(fact)
                 break
     return facts
+
+
+# Deterministic keyword buckets used to classify an already-extracted fact
+# string into a MemoryCategory (ROADMAP.md Milestone 8: "User preferences,
+# Important dates, Personal facts"). Kept as a plain module-level function
+# rather than part of the AIProvider contract — it's local text
+# classification, not a vendor call, so it applies identically regardless
+# of which provider produced the fact text (PROJECT_RULES.md Section 10:
+# domain logic "never assumes a specific vendor's... capability"). Checked
+# in order; the first matching bucket wins, falling back to PERSONAL_FACT —
+# the flat category every fact effectively had before this milestone.
+_CATEGORY_KEYWORDS: list[tuple[str, tuple[str, ...]]] = [
+    (
+        MemoryCategory.IMPORTANT_DATE,
+        ('birthday', 'anniversary', 'due date', 'deadline', 'appointment', 'due on', 'scheduled for'),
+    ),
+    (
+        MemoryCategory.RELATIONSHIP,
+        (
+            'my wife', 'my husband', 'my son', 'my daughter', 'my mother', 'my father',
+            'my mom', 'my dad', 'my partner', 'my friend', 'my sister', 'my brother',
+            'my spouse', 'my kids', 'my child',
+        ),
+    ),
+    (
+        MemoryCategory.ROUTINE,
+        ('every day', 'every week', 'every morning', 'every night', 'daily', 'weekly', 'usually', 'routine'),
+    ),
+    (
+        MemoryCategory.PREFERENCE,
+        ('prefer', 'favorite', 'favourite', 'i like', 'i love', 'i enjoy', "don't like", 'i dislike', 'i hate'),
+    ),
+]
+
+
+def categorize_memory_fact(fact_text: str) -> str:
+    """Classify an extracted fact string into a `MemoryCategory` value.
+
+    Used by apps.ai_companion.services when persisting a new MemoryFact, so
+    categorization is applied consistently regardless of which provider
+    (StubProvider, GeminiProvider, OpenAIProvider) produced the fact text.
+    """
+    lowered = (fact_text or '').lower()
+    for category, keywords in _CATEGORY_KEYWORDS:
+        if any(keyword in lowered for keyword in keywords):
+            return category
+    return MemoryCategory.PERSONAL_FACT
 
 
 class StubProvider(AIProvider):

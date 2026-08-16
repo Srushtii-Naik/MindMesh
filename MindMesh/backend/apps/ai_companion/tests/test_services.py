@@ -8,23 +8,28 @@ test.py sets AI_PROVIDER='stub') so these run fully offline.
 import pytest
 from django.utils import timezone
 
-from apps.ai_companion.models import Conversation, Message, MessageRole
+from apps.ai_companion.models import Conversation, MemoryCategory, MemoryFact, Message, MessageRole
 from apps.ai_companion.services import (
     ChatResponseError,
     ConversationNotFoundError,
+    DuplicateMemoryFactError,
     EmptyMessageError,
+    MemoryFactNotFoundError,
     SummarizationError,
     assemble_context_for_user,
     create_conversation_for_user,
     delete_conversation_for_user,
+    delete_memory_fact_for_user,
     extract_and_store_memory_from_message,
     get_ai_enhanced_suggestions,
     get_conversation,
+    get_memory_fact,
     list_conversations,
     list_memory_facts,
     list_messages,
     send_message_for_user,
     summarize_text,
+    update_memory_fact_for_user,
 )
 
 pytestmark = pytest.mark.django_db
@@ -86,6 +91,31 @@ class TestAssembleContextForUser:
         context = assemble_context_for_user(user)
 
         assert 'Prefers tea over coffee' in context
+
+    def test_groups_memory_facts_by_category(self, user):
+        from apps.ai_companion.models import MemoryFact
+
+        MemoryFact.objects.create(
+            user=user, fact_text='Prefers tea over coffee', category=MemoryCategory.PREFERENCE
+        )
+        MemoryFact.objects.create(
+            user=user, fact_text="Daughter's birthday is June 3rd", category=MemoryCategory.IMPORTANT_DATE
+        )
+
+        context = assemble_context_for_user(user)
+
+        assert 'Preferences: Prefers tea over coffee.' in context
+        assert "Important dates: Daughter's birthday is June 3rd." in context
+
+    def test_excludes_deleted_memory_facts(self, user):
+        from apps.ai_companion.models import MemoryFact
+
+        fact = MemoryFact.objects.create(user=user, fact_text='Prefers tea over coffee')
+        delete_memory_fact_for_user(user, fact.id)
+
+        context = assemble_context_for_user(user)
+
+        assert 'Prefers tea over coffee' not in context
 
 
 # --------------------------------------------------------------------------
@@ -263,6 +293,41 @@ class TestMemoryExtraction:
 
         assert created == []
 
+    def test_extracted_facts_are_categorized(self, user, conversation):
+        """ROADMAP.md Milestone 8: extraction classifies each new fact via
+        apps.ai_companion.providers.categorize_memory_fact."""
+        message = Message.objects.create(
+            conversation=conversation, role=MessageRole.USER, content='I prefer tea over coffee.'
+        )
+
+        created = extract_and_store_memory_from_message(user, conversation, message)
+
+        assert created
+        assert all(fact.category == MemoryCategory.PREFERENCE for fact in created)
+
+    def test_uncategorized_fact_defaults_to_personal_fact(self, user, conversation):
+        message = Message.objects.create(
+            conversation=conversation, role=MessageRole.USER, content='I am a nurse.'
+        )
+
+        created = extract_and_store_memory_from_message(user, conversation, message)
+
+        assert created
+        assert all(fact.category == MemoryCategory.PERSONAL_FACT for fact in created)
+
+    def test_does_not_duplicate_against_soft_deleted_and_active_facts_correctly(self, user, conversation):
+        """A soft-deleted fact should not block re-extraction of the same
+        fact text (the unique constraint is scoped to active facts only)."""
+        existing = MemoryFact.objects.create(user=user, fact_text='I am a teacher')
+        delete_memory_fact_for_user(user, existing.id)
+
+        message = Message.objects.create(
+            conversation=conversation, role=MessageRole.USER, content='I am a teacher.'
+        )
+        created = extract_and_store_memory_from_message(user, conversation, message)
+
+        assert len(created) >= 1
+
 
 # --------------------------------------------------------------------------
 # AI-enhanced suggestions
@@ -304,3 +369,101 @@ class TestAIEnhancedSuggestions:
 
         assert all(s['kind'] != 'ai_proactive' for s in suggestions)
         assert any(s['kind'] == 'overdue' for s in suggestions)
+
+
+# --------------------------------------------------------------------------
+# Memory Engine (ROADMAP.md Milestone 8) — view/edit/delete controls,
+# category filtering, and recall demonstrably persisting across sessions.
+# --------------------------------------------------------------------------
+
+
+class TestMemoryFactCrud:
+    def test_list_memory_facts_only_returns_own_active_facts(self, user, other_user):
+        MemoryFact.objects.create(user=user, fact_text='Mine')
+        MemoryFact.objects.create(user=other_user, fact_text='Not mine')
+        deleted = MemoryFact.objects.create(user=user, fact_text='Deleted')
+        delete_memory_fact_for_user(user, deleted.id)
+
+        facts = list(list_memory_facts(user))
+
+        assert [f.fact_text for f in facts] == ['Mine']
+
+    def test_list_memory_facts_filters_by_category(self, user):
+        MemoryFact.objects.create(user=user, fact_text='Likes tea', category=MemoryCategory.PREFERENCE)
+        MemoryFact.objects.create(user=user, fact_text='Is a teacher', category=MemoryCategory.PERSONAL_FACT)
+
+        facts = list(list_memory_facts(user, category=MemoryCategory.PREFERENCE))
+
+        assert [f.fact_text for f in facts] == ['Likes tea']
+
+    def test_get_memory_fact_raises_for_missing_fact(self, user):
+        import uuid
+
+        with pytest.raises(MemoryFactNotFoundError):
+            get_memory_fact(user, uuid.uuid4())
+
+    def test_get_memory_fact_raises_for_other_users_fact(self, user, other_user):
+        foreign = MemoryFact.objects.create(user=other_user, fact_text='Not mine')
+        with pytest.raises(MemoryFactNotFoundError):
+            get_memory_fact(user, foreign.id)
+
+    def test_update_memory_fact_edits_text_and_category(self, user):
+        fact = MemoryFact.objects.create(
+            user=user, fact_text='Old text', category=MemoryCategory.PERSONAL_FACT
+        )
+
+        updated = update_memory_fact_for_user(
+            user, fact.id, fact_text='New text', category=MemoryCategory.PREFERENCE
+        )
+
+        assert updated.fact_text == 'New text'
+        assert updated.category == MemoryCategory.PREFERENCE
+
+    def test_update_memory_fact_rejects_duplicate_text(self, user):
+        MemoryFact.objects.create(user=user, fact_text='Prefers tea')
+        fact = MemoryFact.objects.create(user=user, fact_text='Prefers coffee')
+
+        with pytest.raises(DuplicateMemoryFactError):
+            update_memory_fact_for_user(user, fact.id, fact_text='Prefers tea')
+
+    def test_update_memory_fact_raises_for_missing_fact(self, user):
+        import uuid
+
+        with pytest.raises(MemoryFactNotFoundError):
+            update_memory_fact_for_user(user, uuid.uuid4(), fact_text='New text')
+
+    def test_delete_memory_fact_soft_deletes(self, user):
+        fact = MemoryFact.objects.create(user=user, fact_text='Prefers tea')
+
+        delete_memory_fact_for_user(user, fact.id)
+
+        fact.refresh_from_db()
+        assert fact.is_active is False
+        assert fact.deleted_at is not None
+
+    def test_deleted_memory_fact_no_longer_listed(self, user):
+        fact = MemoryFact.objects.create(user=user, fact_text='Prefers tea')
+        delete_memory_fact_for_user(user, fact.id)
+
+        assert list(list_memory_facts(user)) == []
+
+    def test_delete_memory_fact_raises_for_other_users_fact(self, user, other_user):
+        foreign = MemoryFact.objects.create(user=other_user, fact_text='Not mine')
+        with pytest.raises(MemoryFactNotFoundError):
+            delete_memory_fact_for_user(user, foreign.id)
+
+
+class TestMemoryRecallAcrossSessions:
+    def test_stored_fact_influences_reply_in_a_later_new_conversation(self, user):
+        """ROADMAP.md Milestone 8: 'AI recall demonstrably influences
+        responses in later sessions' — a fact learned in one conversation
+        must shape the assistant's reply in a brand-new conversation."""
+        first_conversation = create_conversation_for_user(user, title='First session')
+        send_message_for_user(user, first_conversation.id, content='I prefer tea over coffee.')
+
+        assert list(list_memory_facts(user))
+
+        second_conversation = create_conversation_for_user(user, title='Later session')
+        reply = send_message_for_user(user, second_conversation.id, content='Any advice for me?')
+
+        assert 'tea' in reply.content.lower()
