@@ -207,12 +207,12 @@ Deliver the defining feature of MindMesh — a production-ready, context-aware A
 - Milestones 4, 5, and 6 (Tasks, Calendar, Notes) — the AI companion draws context from all of them
 
 **Completion Checklist:**
-- [ ] AI chat functional end-to-end through the provider abstraction layer
-- [ ] Context assembly service pulls relevant task/note/calendar data into conversations
-- [ ] Conversation history persisted and retrievable
-- [ ] Memory extraction logic captures durable facts (storage refined in Milestone 8)
-- [ ] No direct AI SDK calls exist outside the abstraction layer (verified via code review against PROJECT_RULES.md)
-- [ ] Response latency and error handling meet acceptable UX standards
+- [x] AI chat functional end-to-end through the provider abstraction layer
+- [x] Context assembly service pulls relevant task/note/calendar data into conversations
+- [x] Conversation history persisted and retrievable
+- [x] Memory extraction logic captures durable facts (storage refined in Milestone 8)
+- [x] No direct AI SDK calls exist outside the abstraction layer (verified via code review against PROJECT_RULES.md)
+- [x] Response latency and error handling meet acceptable UX standards
 
 ---
 

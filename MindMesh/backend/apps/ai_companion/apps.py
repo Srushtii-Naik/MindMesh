@@ -5,13 +5,13 @@ class AiCompanionConfig(AppConfig):
     """
     ai_companion domain app.
 
-    Scaffolded per ARCHITECTURE.md Section 3 & 9 module boundaries. The AI
-    Provider Abstraction Layer (providers.py, services.py) is brought
-    forward minimally in ROADMAP.md Milestone 6 (Notes & Knowledge) to
-    power AI summaries, per that milestone's completion checklist. The full
-    conversational surface — models, serializers, views, chat endpoints,
-    context assembly, and memory extraction — is implemented in Milestones
-    7 and 8.
+    The AI Provider Abstraction Layer (providers.py, services.py) was
+    brought forward minimally in Milestone 6 to power Notes' AI summaries.
+    Milestone 7 (ROADMAP.md) completes the conversational surface described
+    in ARCHITECTURE.md Section 7: conversations, chat messages, the Context
+    Assembly Service, foundational memory extraction, and AI-enhanced
+    suggestions. The full long-term memory engine (recall, dedup/
+    categorization, embeddings/RAG-readiness) is Milestone 8 scope.
     """
 
     default_auto_field = 'django.db.models.BigAutoField'

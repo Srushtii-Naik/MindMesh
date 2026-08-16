@@ -202,6 +202,7 @@ REST_FRAMEWORK = {
         # limiting on auth and AI-chat endpoints at minimum") — protects
         # against runaway AI provider cost, not just abuse.
         'notes_ai_summary': '20/min',
+        'ai_chat': '20/min',
     },
 }
 

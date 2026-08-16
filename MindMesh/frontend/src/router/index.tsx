@@ -1,6 +1,5 @@
 import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { ComingSoonPage } from '@/components/pages/ComingSoonPage';
 import { NotFoundPage } from '@/components/pages/NotFoundPage';
 import {
   AuthLayout,
@@ -11,6 +10,7 @@ import {
   ProfilePage,
   SettingsPage,
 } from '@/features/auth';
+import { ChatPage } from '@/features/ai-chat';
 import { CalendarPage } from '@/features/calendar';
 import { DashboardPage } from '@/features/dashboard';
 import { NotesPage } from '@/features/notes';
@@ -24,10 +24,10 @@ import { ROUTES } from '@/constants';
  * Per ARCHITECTURE.md Section 2: route-level code splitting is expected as
  * feature modules are added. At this stage, auth (login/register/password
  * reset), account management (profile/settings), the dashboard (home),
- * Tasks (ROADMAP.md Milestone 4), Calendar & Scheduling (Milestone 5), and
- * Notes & Knowledge (Milestone 6) exist. AI Chat remains stubbed with
- * ComingSoonPage as a quick-action target until its own milestone (7)
- * builds it.
+ * Tasks (ROADMAP.md Milestone 4), Calendar & Scheduling (Milestone 5),
+ * Notes & Knowledge (Milestone 6), and the AI Companion (Milestone 7) all
+ * exist. AI Chat graduated off the ComingSoonPage stub that occupied
+ * ROUTES.AI_CHAT since Milestone 3.
  */
 export const router = createBrowserRouter([
   {
@@ -60,12 +60,7 @@ export const router = createBrowserRouter([
           },
           {
             path: ROUTES.AI_CHAT.slice(1),
-            element: (
-              <ComingSoonPage
-                title="AI Companion"
-                description="Your AI companion chat is coming in a future milestone."
-              />
-            ),
+            element: <ChatPage />,
           },
         ],
       },

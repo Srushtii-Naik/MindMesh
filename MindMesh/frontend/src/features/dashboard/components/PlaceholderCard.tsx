@@ -5,11 +5,11 @@ interface PlaceholderCardProps {
 
 /**
  * Shared shell for dashboard cards whose real data source doesn't exist
- * yet (AI Insights needs the AI Companion — Milestone 7). Today's Summary
- * graduated off this shell in Milestone 4, and Upcoming Events graduated
- * in Milestone 5, once their domains had real data to show. Per
- * ROADMAP.md, AI Insights is explicitly allowed to stay placeholder-only
- * for now: "placeholder-ready, wired to AI module once available".
+ * yet. Today's Summary graduated off this shell in Milestone 4, Upcoming
+ * Events in Milestone 5, and AI Insights in Milestone 7 once the AI
+ * Companion existed to power it. Kept here, still exported, for any future
+ * card (e.g. Milestone 11 Analytics) that needs the same placeholder shell
+ * before its domain is built.
  */
 export function PlaceholderCard({ title, message }: PlaceholderCardProps) {
   return (

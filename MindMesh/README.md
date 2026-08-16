@@ -2,7 +2,7 @@
 
 **The AI companion that remembers your life, so you don't have to manage it across a dozen apps.**
 
-> Status: In Development — Milestone 6 (Notes & Knowledge) Complete
+> Status: In Development — Milestone 7 (AI Companion) Complete
 
 ---
 
@@ -199,7 +199,7 @@ Milestones are sequenced in strict dependency order, from `PROJECT_RULES.md`-ali
 | 4 | Task Management | Milestone 3 | ✅ Complete |
 | 5 | Calendar & Scheduling | Milestone 4 | ✅ Complete |
 | 6 | Notes & Knowledge | Milestone 2 | ✅ Complete |
-| 7 | AI Companion | Milestones 4, 5, 6 | Not started |
+| 7 | AI Companion | Milestones 4, 5, 6 | ✅ Complete |
 | 8 | Memory Engine | Milestone 7 | Not started |
 | 9 | Notifications | Milestone 5, Milestone 1 infra | Not started |
 | 10 | Family & Shared Workspace | Milestones 4, 5, 6 | Not started |
@@ -230,7 +230,7 @@ docker compose up --build
 
 Google OAuth sign-in requires `GOOGLE_OAUTH_CLIENT_ID` (backend) and `VITE_GOOGLE_OAUTH_CLIENT_ID` (frontend) to be set to the same OAuth client ID; without it, the Google sign-in button stays hidden and email/password auth works as normal.
 
-Notes' AI summaries (Milestone 6) work out of the box with no configuration — `AI_PROVIDER` defaults to an offline `stub` provider. Set `AI_PROVIDER=gemini` or `AI_PROVIDER=openai` with the matching `GEMINI_API_KEY`/`OPENAI_API_KEY` to use a real model instead.
+Notes' AI summaries (Milestone 6) and the AI Companion chat, context-aware replies, and memory extraction (Milestone 7) all work out of the box with no configuration — `AI_PROVIDER` defaults to an offline `stub` provider, so the whole AI surface is testable without any vendor account. Set `AI_PROVIDER=gemini` or `AI_PROVIDER=openai` with the matching `GEMINI_API_KEY`/`OPENAI_API_KEY` to use a real model instead; no code changes are required to switch providers.
 
 ## Documentation
 
