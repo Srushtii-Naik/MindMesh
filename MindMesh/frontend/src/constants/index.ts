@@ -30,5 +30,7 @@ export const ROUTES = {
   NOTES: '/notes',
   CALENDAR: '/calendar',
   AI_CHAT: '/chat',
+  NOTIFICATIONS: '/notifications',
+  FAMILY: '/family',
   NOT_FOUND: '*',
 } as const;

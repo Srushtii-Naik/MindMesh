@@ -15,12 +15,15 @@ those apps' models directly, per ARCHITECTURE.md Section 3.
 
 from datetime import datetime
 
+from django.utils import timezone
+
 from apps.accounts.models import User
 from apps.calendar_events.services import EventNotFoundError, get_event
 from apps.reminders.models import Reminder
 from apps.reminders.repositories import (
     create_reminder,
     get_reminder_for_user,
+    list_all_due_reminders,
     list_reminders_for_user,
     soft_delete_reminder,
     update_reminder,
@@ -133,3 +136,24 @@ def delete_reminder_for_user(user: User, reminder_id) -> None:
     if reminder is None:
         raise ReminderNotFoundError('Reminder not found.')
     soft_delete_reminder(reminder)
+
+
+def get_due_reminders(before: datetime | None = None) -> list[Reminder]:
+    """
+    Reminders across *all* users that are due for delivery, for the
+    Milestone 9 notification engine's periodic scan
+    (apps.notifications.services.dispatch_due_reminder_notifications).
+
+    Exposed as a service-layer function — never a direct repository/model
+    import from apps.notifications — per ARCHITECTURE.md Section 3's
+    cross-domain rule. Every other function in this module is user-scoped;
+    this one intentionally isn't, since it backs a system-wide scheduled
+    scan rather than a per-request call.
+    """
+    return list(list_all_due_reminders(before or timezone.now()))
+
+
+def mark_reminder_sent(reminder: Reminder) -> Reminder:
+    """Marks a reminder as delivered. Called by the notification engine once
+    it has recorded the corresponding Notification for the reminder's user."""
+    return update_reminder(reminder, is_sent=True, sent_at=timezone.now())

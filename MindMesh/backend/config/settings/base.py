@@ -58,6 +58,7 @@ LOCAL_APPS = [
     'apps.calendar_events',
     'apps.ai_companion',
     'apps.notifications',
+    'apps.family',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -130,6 +131,24 @@ CELERY_RESULT_SERIALIZER = 'json'
 # Enables tests (and only tests) to run tasks synchronously, in-process,
 # without a running broker. Never enabled outside of the test environment.
 CELERY_TASK_ALWAYS_EAGER = env.bool('CELERY_TASK_ALWAYS_EAGER', default=False)
+
+# Celery Beat schedule (Milestone 9 — Notifications' reminder engine).
+# Uses Celery's built-in file-based PersistentScheduler (no extra
+# dependency); run via `celery -A celery_app.celery beat`. A 60-second
+# cadence is frequent enough for reminder UX without hammering the DB on
+# every tick.
+CELERY_BEAT_SCHEDULE = {
+    'notifications-scan-due-reminders': {
+        'task': 'notifications.scan_due_reminders',
+        'schedule': 60.0,
+    },
+    'family-expire-stale-invitations': {
+        'task': 'family.expire_stale_invitations',
+        # Housekeeping (ARCHITECTURE.md Section 8) — hourly is frequent
+        # enough since invitations have a 7-day validity window.
+        'schedule': 3600.0,
+    },
+}
 
 # --------------------------------------------------------------------------
 # Custom user model (ARCHITECTURE.md Section 5 — email-based authentication)
@@ -295,3 +314,14 @@ GEMINI_API_KEY = env('GEMINI_API_KEY', default='')
 OPENAI_API_KEY = env('OPENAI_API_KEY', default='')
 OPENAI_MODEL = env('OPENAI_MODEL', default='gpt-4o-mini')
 AI_SUMMARY_TIMEOUT_SECONDS = env.int('AI_SUMMARY_TIMEOUT_SECONDS', default=15)
+
+# --------------------------------------------------------------------------
+# Push notification provider (Milestone 9 — Notifications). Same pattern as
+# AI_PROVIDER/EMAIL_BACKEND above: defaults to a credential-free `console`
+# adapter (apps.notifications.channels.ConsolePushSender) that logs instead
+# of calling a real vendor, so the app is fully usable without push
+# credentials. Point PUSH_PROVIDER at a real adapter once FCM/APNs/Web Push
+# credentials are available.
+# --------------------------------------------------------------------------
+
+PUSH_PROVIDER = env('PUSH_PROVIDER', default='console')

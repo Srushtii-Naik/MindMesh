@@ -18,5 +18,7 @@ urlpatterns = [
     path('api/v1/reminders/', include('apps.reminders.urls')),
     path('api/v1/notes/', include('apps.notes.urls')),
     path('api/v1/ai/', include('apps.ai_companion.urls')),
+    path('api/v1/notifications/', include('apps.notifications.urls')),
+    path('api/v1/family/', include('apps.family.urls')),
     # Further domain routes are added starting in later milestones.
 ]

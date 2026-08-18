@@ -13,7 +13,9 @@ import {
 import { ChatPage } from '@/features/ai-chat';
 import { CalendarPage } from '@/features/calendar';
 import { DashboardPage } from '@/features/dashboard';
+import { FamilyPage } from '@/features/family';
 import { NotesPage } from '@/features/notes';
+import { NotificationsPage } from '@/features/notifications';
 import { TasksPage } from '@/features/tasks';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
 import { ROUTES } from '@/constants';
@@ -25,8 +27,9 @@ import { ROUTES } from '@/constants';
  * feature modules are added. At this stage, auth (login/register/password
  * reset), account management (profile/settings), the dashboard (home),
  * Tasks (ROADMAP.md Milestone 4), Calendar & Scheduling (Milestone 5),
- * Notes & Knowledge (Milestone 6), and the AI Companion (Milestone 7) all
- * exist. AI Chat graduated off the ComingSoonPage stub that occupied
+ * Notes & Knowledge (Milestone 6), the AI Companion (Milestone 7),
+ * Notifications (Milestone 9), and Family & Shared Workspace (Milestone 10)
+ * all exist. AI Chat graduated off the ComingSoonPage stub that occupied
  * ROUTES.AI_CHAT since Milestone 3.
  */
 export const router = createBrowserRouter([
@@ -61,6 +64,14 @@ export const router = createBrowserRouter([
           {
             path: ROUTES.AI_CHAT.slice(1),
             element: <ChatPage />,
+          },
+          {
+            path: ROUTES.NOTIFICATIONS.slice(1),
+            element: <NotificationsPage />,
+          },
+          {
+            path: ROUTES.FAMILY.slice(1),
+            element: <FamilyPage />,
           },
         ],
       },

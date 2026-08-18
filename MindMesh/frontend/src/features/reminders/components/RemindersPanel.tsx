@@ -15,8 +15,8 @@ export function RemindersPanel() {
       <div>
         <h2 className="text-sm font-medium text-slate-700 dark:text-slate-300">Reminders</h2>
         <p className="text-xs text-slate-500 dark:text-slate-400">
-          Reminders are saved now; notifications will start going out once notification delivery
-          ships.
+          Reminders fire automatically and notify you in-app and by email (see Settings) once
+          they&apos;re due.
         </p>
       </div>
 

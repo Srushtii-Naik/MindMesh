@@ -2,7 +2,7 @@
 
 **The AI companion that remembers your life, so you don't have to manage it across a dozen apps.**
 
-> Status: In Development — Milestone 8 (Memory Engine) Complete
+> Status: In Development — Milestone 10 (Family & Shared Workspace) Complete
 
 ---
 
@@ -201,8 +201,8 @@ Milestones are sequenced in strict dependency order, from `PROJECT_RULES.md`-ali
 | 6 | Notes & Knowledge | Milestone 2 | ✅ Complete |
 | 7 | AI Companion | Milestones 4, 5, 6 | ✅ Complete |
 | 8 | Memory Engine | Milestone 7 | ✅ Complete |
-| 9 | Notifications | Milestone 5, Milestone 1 infra | Not started |
-| 10 | Family & Shared Workspace | Milestones 4, 5, 6 | Not started |
+| 9 | Notifications | Milestone 5, Milestone 1 infra | ✅ Complete |
+| 10 | Family & Shared Workspace | Milestones 4, 5, 6 | ✅ Complete |
 | 11 | Analytics & Insights | Milestones 4–8 | Not started |
 | 12 | Production & Deployment | Milestones 1–11 | Not started |
 
@@ -231,6 +231,10 @@ docker compose up --build
 Google OAuth sign-in requires `GOOGLE_OAUTH_CLIENT_ID` (backend) and `VITE_GOOGLE_OAUTH_CLIENT_ID` (frontend) to be set to the same OAuth client ID; without it, the Google sign-in button stays hidden and email/password auth works as normal.
 
 Notes' AI summaries (Milestone 6), the AI Companion chat with context-aware replies (Milestone 7), and the categorized long-term Memory Engine with view/edit/delete controls (Milestone 8) all work out of the box with no configuration — `AI_PROVIDER` defaults to an offline `stub` provider, so the whole AI surface is testable without any vendor account. Set `AI_PROVIDER=gemini` or `AI_PROVIDER=openai` with the matching `GEMINI_API_KEY`/`OPENAI_API_KEY` to use a real model instead; no code changes are required to switch providers.
+
+Notifications (Milestone 9) work out of the box the same way: a Celery Beat task scans due reminders every 60 seconds and delivers them in-app, by email (via `EMAIL_BACKEND`, console by default), and by push to any registered device — `PUSH_PROVIDER` defaults to an offline `console` adapter that logs the push instead of calling a real vendor, so the notification pipeline is fully testable without FCM/APNs/Web Push credentials. Point `PUSH_PROVIDER` at a real adapter once vendor credentials are available; no other code changes are required. The notification bell in the app header and the full notification center at `/notifications` reflect deliveries as they happen.
+
+Family & Shared Workspace (Milestone 10) turns MindMesh from a single-user tool into a household one at `/family`: create or join a family (invite by email, with owner/adult/child roles and a 7-day expiring invitation link), share individual tasks/calendar events/notes with the family, and keep a shared list of emergency contacts. Sharing a task can grant edit access, letting another family member complete it on the owner's behalf — the "delegate tasks to my children" flow from PRD.md's parent persona. Shared calendar events and notes are view-only for non-owners in this milestone. Every family action is enforced at the service layer (not just the API), so a stranger to the family can never read or modify its data — verified by dedicated data-isolation tests.
 
 ## Documentation
 

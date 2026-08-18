@@ -5,9 +5,9 @@ class NotificationsConfig(AppConfig):
     """
     notifications domain app.
 
-    Scaffolded per ARCHITECTURE.md Section 3 & 9 module boundaries.
-    Models, serializers, services, and views are implemented in this app's
-    dedicated ROADMAP.md milestone — not part of Project Foundation.
+    Implements ROADMAP.md Milestone 9 — Notifications: the reminder
+    delivery engine, email/push channels, and the in-app notification
+    center, per ARCHITECTURE.md Section 3 & 9 module boundaries.
     """
 
     default_auto_field = 'django.db.models.BigAutoField'

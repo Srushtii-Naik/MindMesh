@@ -261,11 +261,11 @@ Complete the notification system so reminders and important events reliably reac
 - Milestone 5 (Calendar & Scheduling) for reminder data; Celery/Redis infrastructure from Milestone 1
 
 **Completion Checklist:**
-- [ ] Reminder engine runs on scheduled Celery tasks and fires accurately
-- [ ] Push notification delivery implemented and tested
-- [ ] Email notification delivery implemented and tested
-- [ ] In-app notification center reflects real-time and historical notifications
-- [ ] Delivery failures are retried/logged, not silently dropped
+- [x] Reminder engine runs on scheduled Celery tasks and fires accurately
+- [x] Push notification delivery implemented and tested
+- [x] Email notification delivery implemented and tested
+- [x] In-app notification center reflects real-time and historical notifications
+- [x] Delivery failures are retried/logged, not silently dropped
 
 ---
 
@@ -288,10 +288,10 @@ Extend MindMesh from a personal tool into a collaborative one, enabling shared c
 - Milestones 4, 5, and 6 (Tasks, Calendar, Notes) — sharing extends existing single-user modules
 
 **Completion Checklist:**
-- [ ] Family member invitation and permission model implemented
-- [ ] Shared tasks, calendar, and notes respect ownership and permission boundaries
-- [ ] Emergency contacts feature implemented and accessible appropriately
-- [ ] Data isolation verified — shared access never leaks beyond intended members
+- [x] Family member invitation and permission model implemented
+- [x] Shared tasks, calendar, and notes respect ownership and permission boundaries
+- [x] Emergency contacts feature implemented and accessible appropriately
+- [x] Data isolation verified — shared access never leaks beyond intended members
 
 ---
 

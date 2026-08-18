@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAuthStore, useLogout } from '@/features/auth';
+import { NotificationBell } from '@/features/notifications';
 import { APP_NAME, ROUTES } from '@/constants';
 
 /**
@@ -27,6 +28,13 @@ export function AppHeader() {
 
         {user && (
           <nav className="flex items-center gap-4">
+            <NotificationBell />
+            <Link
+              to={ROUTES.FAMILY}
+              className="text-sm font-medium text-slate-600 hover:text-brand-600 dark:text-slate-300 dark:hover:text-brand-400"
+            >
+              Family
+            </Link>
             <Link
               to={ROUTES.PROFILE}
               className="text-sm font-medium text-slate-600 hover:text-brand-600 dark:text-slate-300 dark:hover:text-brand-400"
