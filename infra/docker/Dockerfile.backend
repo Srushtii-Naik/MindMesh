@@ -1,0 +1,87 @@
+# MindMesh Backend — Docker image
+#
+# Multi-stage build with two targets:
+#   development — used by docker-compose.yml for local dev (runserver,
+#                  source bind-mounted, dev/test tooling installed).
+#   production   — used by docker-compose.prod.yml and Railway (gunicorn,
+#                  no dev tooling, non-root user, static files collected
+#                  at build time). Per ROADMAP.md Milestone 12 — "Docker
+#                  production build" / "Production Docker builds verified".
+
+FROM python:3.12-slim AS base
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        libpq-dev \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt requirements-dev.txt ./
+
+# --------------------------------------------------------------------------
+# development target — dev/test tooling included, source bind-mounted by
+# docker-compose.yml (this COPY is a fallback for building the image standalone).
+# --------------------------------------------------------------------------
+FROM base AS development
+
+RUN pip install -r requirements-dev.txt
+
+COPY . .
+
+EXPOSE 8000
+
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
+# --------------------------------------------------------------------------
+# production target — runtime dependencies only, no dev/test tooling, runs
+# as a non-root user, serves via gunicorn (PROJECT_RULES.md Section 2 locked
+# stack already includes gunicorn in requirements.txt).
+# --------------------------------------------------------------------------
+FROM base AS production
+
+RUN pip install -r requirements.txt
+
+# Dedicated non-root user (ARCHITECTURE.md Section 10 — "no root container
+# processes in production").
+RUN addgroup --system mindmesh && adduser --system --ingroup mindmesh mindmesh
+
+COPY . .
+
+# Collected at build time so the production image is self-contained and
+# doesn't depend on a writable volume for static assets (config/urls.py
+# serves them via Django's static view when DJANGO_SERVE_STATIC=True —
+# see that module's docstring for when this applies vs. Nginx/a CDN).
+ENV DJANGO_SETTINGS_MODULE=config.settings.production
+# Build-time-only placeholder values so `collectstatic` (which imports
+# config.settings.production and therefore triggers its fail-fast checks)
+# can run without real secrets being baked into the image layer. Real
+# values are supplied at container start via the platform's env vars —
+# collectstatic never touches the database or a live secret.
+RUN DJANGO_SECRET_KEY=build-time-placeholder-not-used-at-runtime-xxxxxxxxxxxxxxxxxxxxxxx \
+    DJANGO_ALLOWED_HOSTS=build.invalid \
+    CSRF_TRUSTED_ORIGINS=https://build.invalid \
+    DATABASE_URL=postgres://build:build@build.invalid:5432/build \
+    REDIS_URL=redis://build.invalid:6379/0 \
+    python manage.py collectstatic --noinput
+
+RUN chown -R mindmesh:mindmesh /app
+USER mindmesh
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/api/v1/health/ || exit 1
+
+# WEB_CONCURRENCY is read by gunicorn's --workers flag via the environment
+# (Railway sets this automatically based on available CPU; defaults to 3
+# workers otherwise). --access-logfile - / --error-logfile - send gunicorn's
+# own logs to stdout/stderr for platform log aggregation (see
+# config/settings/base.py LOGGING docstring).
+CMD ["sh", "-c", "gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers ${WEB_CONCURRENCY:-3} --timeout 30 --access-logfile - --error-logfile -"]

@@ -1,0 +1,65 @@
+# MindMesh Frontend — Docker image
+#
+# Multi-stage build with two targets:
+#   development — used by docker-compose.yml for local dev (Vite dev server,
+#                  source bind-mounted).
+#   production   — used by docker-compose.prod.yml for local production-build
+#                  verification (ROADMAP.md Milestone 12 — "Production Docker
+#                  builds verified for both frontend and backend"). The real
+#                  production deployment target per PROJECT_RULES.md Section 2
+#                  is Vercel, which builds and serves the static output
+#                  directly — this target exists so the production build can
+#                  also be verified locally/in CI without a Vercel account.
+
+FROM node:20-alpine AS base
+WORKDIR /app
+COPY package.json package-lock.json* ./
+
+# --------------------------------------------------------------------------
+# development target
+# --------------------------------------------------------------------------
+FROM base AS development
+
+RUN npm install
+COPY . .
+
+EXPOSE 5173
+
+CMD ["npm", "run", "dev", "--", "--host"]
+
+# --------------------------------------------------------------------------
+# build stage — compiles the static production bundle (tsc -b && vite build,
+# same as the `npm run build` used in CI/local verification). Vite inlines
+# VITE_-prefixed env vars into the bundle at build time (not runtime), so
+# it's accepted as a build ARG here rather than a docker-compose
+# `environment:` entry on the production service, which would have no effect.
+# --------------------------------------------------------------------------
+FROM base AS build
+
+ARG VITE_API_BASE_URL=http://localhost:8000/api/v1
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV VITE_APP_ENV=production
+
+RUN npm install
+COPY . .
+RUN npm run build
+
+# --------------------------------------------------------------------------
+# production target — serves the static build via Nginx. A separate base
+# image (nginx:alpine), not an npm dependency, so this doesn't conflict with
+# PROJECT_RULES.md Section 2's locked frontend stack. The Nginx config
+# (SPA fallback routing, security headers) is volume-mounted by
+# docker-compose.prod.yml at container start — same pattern the existing
+# nginx reverse-proxy service already uses — rather than COPYed here, since
+# this build's context is scoped to frontend/ and can't reach infra/nginx/.
+# --------------------------------------------------------------------------
+FROM nginx:1.27-alpine AS production
+
+COPY --from=build /app/dist /usr/share/nginx/html
+
+EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD wget -q -O /dev/null http://localhost:80/ || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]
